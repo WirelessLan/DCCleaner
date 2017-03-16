@@ -45,3 +45,8 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+.vs/DCCleaner/v14/.suo
+*.dll
+**/*/bin/
+**/*/obj/
+**/packages/
