@@ -162,7 +162,6 @@ namespace DCAdapter
             
             for (int i = 0; i < pageCnts; i++)
             {
-                Thread.Sleep(50);
                 commentList.AddRange(LoadCommentList(i + 1));
             }
 
