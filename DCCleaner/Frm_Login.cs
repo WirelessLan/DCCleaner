@@ -26,9 +26,14 @@ namespace DCCleaner
                 return;
             }
 
+            if(loginThread != null && loginThread.IsAlive)
+            {
+                return;
+            }
+
             string id = tb_ID.Text.Trim();
             string pw = tb_PW.Text.Trim();
-
+            
             loginThread = new Thread(new ThreadStart(delegate ()
             {
                 bool result = false;
