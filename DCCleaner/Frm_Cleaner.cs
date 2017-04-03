@@ -118,6 +118,21 @@ namespace DCCleaner
 
         private void btn_RemoveGallArticle_Click(object sender, EventArgs e)
         {
+
+            RemoveArticles(false);
+        }
+
+        private void btn_RemoveAllArticle_Click(object sender, EventArgs e)
+        {
+            RemoveArticles(true);
+        }
+
+        /// <summary>
+        /// 글 목록 삭제 함수
+        /// </summary>
+        /// <param name="both">True : 갤로그도, False : 갤러리만</param>
+        private void RemoveArticles(bool both)
+        {
             if (articleList == null)
                 return;
 
@@ -133,7 +148,7 @@ namespace DCCleaner
                     ArticleInfo res = null;
                     try
                     {
-                        res = conn.DeleteArticle(info, false);
+                        res = conn.DeleteArticle(info, both);
                     }
                     catch
                     {
@@ -155,112 +170,32 @@ namespace DCCleaner
 
                 this.Invoke(new Action(() =>
                 {
-                    lbl_Status.Text = "쓴 글 - 갤만 삭제 완료";
+                    if(both)
+                        lbl_Status.Text = "쓴 글 - 갤로그도 삭제 완료";
+                    else
+                        lbl_Status.Text = "쓴 글 - 갤만 삭제 완료";
                 }));
             }));
 
-            lbl_Status.Text = "쓴 글 - 갤만 삭제중...";
-
-            loadingThread.Start();
-        }
-
-        private void btn_RemoveAllArticle_Click(object sender, EventArgs e)
-        {
-            if (articleList == null)
-                return;
-            
-            if (loadingThread != null && loadingThread.IsAlive)
-            {
-                return;
-            }
-
-            loadingThread = new Thread(new ThreadStart(delegate ()
-            {
-                foreach (ArticleInfo info in articleList)
-                {
-                    ArticleInfo res = null;
-                    try
-                    {
-                        res = conn.DeleteArticle(info, true);
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-
-                    if (res.GallogDelete == false)
-                        for (int i = 0; i < 5; i++)
-                        {
-                            // 실패시, 최대 5회 재시도
-                            res = conn.DeleteArticle(info, false);
-                            if (res.GallogDelete)
-                                break;
-                        }
-                    info.ActualDelete = res.ActualDelete;
-                    info.GallogDelete = res.GallogDelete;
-                    info.DeleteMessage = res.DeleteMessage;
-                }
-
-                this.Invoke(new Action(() =>
-                {
-                    lbl_Status.Text = "쓴 글 - 갤로그도 삭제 완료";
-                }));
-            }));
-
-            lbl_Status.Text = "쓴 글 - 갤로그도 삭제중...";
+            if(both)
+                lbl_Status.Text = "쓴 글 - 갤로그도 삭제중...";
+            else
+                lbl_Status.Text = "쓴 글 - 갤만 삭제중...";
 
             loadingThread.Start();
         }
 
         private void btn_RemoveGallComment_Click(object sender, EventArgs e)
         {
-            if (commentList == null)
-                return;
-
-            if (loadingThread != null && loadingThread.IsAlive)
-            {
-                return;
-            }
-
-            loadingThread = new Thread(new ThreadStart(delegate ()
-            {
-                foreach (CommentInfo info in commentList)
-                {
-                    CommentInfo res = null;
-                    try
-                    {
-                        res = conn.DeleteComment(info, false);
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-
-                    if (res.ActualDelete == false)
-                        for (int i = 0; i < 5; i++)
-                        {
-                            // 실패시, 최대 5회 재시도
-                            res = conn.DeleteComment(info, false);
-                            if (res.ActualDelete)
-                                break;
-                        }
-                    info.ActualDelete = res.ActualDelete;
-                    info.GallogDelete = res.GallogDelete;
-                    info.DeleteMessage = res.DeleteMessage;
-                }
-
-                this.Invoke(new Action(() =>
-                {
-                    lbl_Status.Text = "쓴 리플 - 갤만 삭제 완료";
-                }));
-            }));
-
-            lbl_Status.Text = "쓴 리플 - 갤만 삭제중...";
-
-            loadingThread.Start();
+            RemoveComments(false);
         }
 
         private void btn_RemoveAllComment_Click(object sender, EventArgs e)
+        {
+            RemoveComments(true);
+        }
+
+        private void RemoveComments(bool both)
         {
             if (commentList == null)
                 return;
@@ -277,7 +212,7 @@ namespace DCCleaner
                     CommentInfo res = null;
                     try
                     {
-                        res = conn.DeleteComment(info, true);
+                        res = conn.DeleteComment(info, both);
                     }
                     catch
                     {
@@ -298,11 +233,17 @@ namespace DCCleaner
 
                 this.Invoke(new Action(() =>
                 {
-                    lbl_Status.Text = "쓴 리플 - 갤로그도 삭제 완료";
+                    if(both)
+                        lbl_Status.Text = "쓴 리플 - 갤로그도 삭제 완료";
+                    else
+                        lbl_Status.Text = "쓴 리플 - 갤만 삭제 완료";
                 }));
             }));
 
-            lbl_Status.Text = "쓴 리플 - 갤로그도 삭제중...";
+            if(both)
+                lbl_Status.Text = "쓴 리플 - 갤로그도 삭제중...";
+            else
+                lbl_Status.Text = "쓴 리플 - 갤만 삭제중...";
 
             loadingThread.Start();
         }
@@ -364,8 +305,8 @@ namespace DCCleaner
 
                     this.Invoke(new Action(() =>
                     {
-                        LoadArticleList();
-
+                        dgv_ArticleList.Rows.RemoveAt(selectedIdx);
+                        gb_ArticleGroup.Text = "내가 쓴 글 [" + articleList.Count.ToString() + "]";
                         lbl_Status.Text = "글을 삭제하였습니다.";
                     }));
                 }
@@ -421,8 +362,8 @@ namespace DCCleaner
 
                     this.Invoke(new Action(() =>
                     {
-                        LoadCommentList();
-
+                        dgv_CommentList.Rows.RemoveAt(selectedIdx);
+                        gb_CommentGroup.Text = "내가 쓴 리플 [" + commentList.Count.ToString() + "]";
                         lbl_Status.Text = "리플을 삭제하였습니다.";
                     }));
                 }
