@@ -255,7 +255,7 @@ namespace DCAdapter
         public CommentInfo DeleteComment(CommentInfo info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 0;
+            int delay = 50;
 
             string gall_id, gall_no, article_id, comment_id, logNo;
 
