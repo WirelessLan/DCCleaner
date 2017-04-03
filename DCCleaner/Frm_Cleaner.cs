@@ -143,8 +143,9 @@ namespace DCCleaner
 
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
-                foreach (ArticleInfo info in articleList)
+                for(int i = articleList.Count - 1;i>-1;i--)
                 {
+                    ArticleInfo info = articleList[i];
                     ArticleInfo res = null;
                     try
                     {
@@ -156,13 +157,26 @@ namespace DCCleaner
                     }
 
                     if (res.ActualDelete == false)
-                        for (int i = 0; i < 5; i++)
+                        for (int j = 0; j < 5; j++)
                         {
-                            // 실패시, 최대 5회 재시도
+                            // 실패시, Sleep 후 최대 5회 재시도
+                            Thread.Sleep(200);
                             res = conn.DeleteArticle(info, false);
                             if (res.ActualDelete)
                                 break;
                         }
+
+                    // 갤로그도 삭제일 경우에만 화면 지움
+                    if (both)
+                    {
+                        articleList.RemoveAt(i);
+                        this.Invoke(new Action(() =>
+                        {
+                            dgv_ArticleList.Rows.RemoveAt(i);
+                            gb_ArticleGroup.Text = "내가 쓴 글 [" + articleList.Count.ToString() + "]";
+                        }));
+                    }
+
                     info.ActualDelete = res.ActualDelete;
                     info.GallogDelete = res.GallogDelete;
                     info.DeleteMessage = res.DeleteMessage;
@@ -195,6 +209,10 @@ namespace DCCleaner
             RemoveComments(true);
         }
 
+        /// <summary>
+        /// 댓글 목록 삭제 함수
+        /// </summary>
+        /// <param name="both">True : 갤로그도 False : 갤러리만</param>
         private void RemoveComments(bool both)
         {
             if (commentList == null)
@@ -207,8 +225,9 @@ namespace DCCleaner
 
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
-                foreach (CommentInfo info in commentList)
+                for (int i = commentList.Count - 1; i > -1; i--)
                 {
+                    CommentInfo info = commentList[i];
                     CommentInfo res = null;
                     try
                     {
@@ -219,13 +238,26 @@ namespace DCCleaner
                         continue;
                     }
                     if (res.GallogDelete == false)
-                        for (int i = 0; i < 5; i++)
+                        for (int j = 0; j < 5; j++)
                         {
-                            // 실패시, 최대 5회 재시도
+                            // 실패시, Sleep 후 최대 5회 재시도
+                            Thread.Sleep(200);
                             res = conn.DeleteComment(info, false);
                             if (res.GallogDelete)
                                 break;
                         }
+
+                    // 갤로그도 삭제일 경우에만 화면 지움
+                    if (both)
+                    {
+                        commentList.RemoveAt(i);
+                        this.Invoke(new Action(() =>
+                        {
+                            dgv_CommentList.Rows.RemoveAt(i);
+                            gb_CommentGroup.Text = "내가 쓴 리플 [" + commentList.Count.ToString() + "]";
+                        }));
+                    }
+
                     info.ActualDelete = res.ActualDelete;
                     info.GallogDelete = res.GallogDelete;
                     info.DeleteMessage = res.DeleteMessage;

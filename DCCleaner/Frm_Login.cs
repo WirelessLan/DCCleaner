@@ -20,9 +20,16 @@ namespace DCCleaner
 
         private void btn_Login_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(tb_ID.Text) || string.IsNullOrWhiteSpace(tb_PW.Text))
+            if (string.IsNullOrWhiteSpace(tb_ID.Text))
             {
-                MessageBox.Show("ID 또는 비밀번호를 입력해주세요.", "로그인 실패", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                tb_ID.Focus();
+                this.lbl_Error.Text = "ID를 입력해주세요.";
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(tb_PW.Text))
+            {
+                tb_PW.Focus();
+                this.lbl_Error.Text = "비밀번호를 입력해주세요.";
                 return;
             }
 
