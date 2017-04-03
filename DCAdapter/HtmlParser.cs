@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
+using System.Web;
 
 namespace DCAdapter
 {
@@ -116,8 +117,8 @@ namespace DCAdapter
                 if (node.Descendants("td").Count() == 6)
                 {
                     string name = node.SelectSingleNode("./td[1]").InnerText;
-                    name = System.Web.HttpUtility.HtmlDecode(name).Trim();
-                    string content = node.SelectSingleNode("./td[3]").InnerText;
+                    name = HttpUtility.HtmlDecode(name).Trim();
+                    string content = HttpUtility.HtmlDecode(node.SelectSingleNode("./td[3]").InnerText);
                     string date = node.SelectSingleNode("./td[5]").InnerText;
 
                     string url = Utility.GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);

@@ -129,11 +129,18 @@ namespace DCAdapter
             // 갤로그의 HTML 소스에서 총 쓴 글의 갯수를 가져와서 총 페이지 갯수를 지정.
             articleCounts = HtmlParser.GetArticleCounts(html);
             pageCnts = (int)(articleCounts / 10) + (articleCounts % 10 > 0 ? 1 : 0);
-            
+
             // 총 페이지 수만큼 반복하여 총 글 목록을 리스트에 저장함.
             for (int i = 0; i < pageCnts; i++)
             {
-                articles.AddRange(LoadArticleList(i + 1));
+                try
+                {
+                    articles.AddRange(LoadArticleList(i + 1));
+                }
+                catch
+                {
+                    throw new Exception("글을 불러오는데 실패하였습니다.");
+                }
             }
             
             // 저장한 리스트를 반환
@@ -162,7 +169,14 @@ namespace DCAdapter
             
             for (int i = 0; i < pageCnts; i++)
             {
-                commentList.AddRange(LoadCommentList(i + 1));
+                try
+                {
+                    commentList.AddRange(LoadCommentList(i + 1));
+                }
+                catch
+                {
+                    throw new Exception("리플을 불러오는데 실패하였습니다.");
+                }
             }
 
             return commentList;
@@ -241,7 +255,7 @@ namespace DCAdapter
         public CommentInfo DeleteComment(CommentInfo info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 50;
+            int delay = 0;
 
             string gall_id, gall_no, article_id, comment_id, logNo;
 

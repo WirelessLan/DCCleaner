@@ -376,7 +376,7 @@ namespace DCAdapter
             {
                 string reqData = "rb=&dTp=1&gid=" + id + "&cid=" + gall_no +
                     "&pno=" + art_id + "&no=" + art_id + "&logNo=" + logNo + "&id=" + gall_id +
-                    "&nate=&dcc_key=" + dcc_key + "&" + HttpUtility.UrlEncode(randKey) + "=" + HttpUtility.UrlEncode(randVal);
+                    "&nate=&dcc_key=" + dcc_key + (randKey == "dcc_key" ? "" : ("&" + HttpUtility.UrlEncode(randKey) + "=" + HttpUtility.UrlEncode(randVal)));
                 writer.Write(reqData);
             }
 
