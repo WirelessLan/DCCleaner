@@ -79,6 +79,7 @@ namespace DCAdapter
             {
                 if (pageHtml.Contains("/error/deleted"))
                 {
+                    throw new Exception("이미 삭제된 리플입니다.");
                 }
                 else
                 {
