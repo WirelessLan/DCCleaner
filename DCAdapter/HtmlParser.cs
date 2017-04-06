@@ -77,7 +77,13 @@ namespace DCAdapter
 
             if (chk7Node == null)
             {
-                throw new Exception("댓글내역이 없습니다.");
+                if (pageHtml.Contains("/error/deleted"))
+                {
+                }
+                else
+                {
+                    throw new Exception("알 수 없는 오류입니다.");
+                }
             }
             
             check7 = chk7Node.Attributes["value"].Value;

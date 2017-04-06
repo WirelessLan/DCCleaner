@@ -278,7 +278,7 @@ namespace DCAdapter
         {
             string pageHtml = RequestArticlePage(gallid, articleid, ref cookies);
             string ci_t = null, check7 = null;
-
+            
             try
             {
                 HtmlParser.GetDeleteCommentParameters(pageHtml, out check7);
@@ -327,7 +327,7 @@ namespace DCAdapter
                             }
                             else if(result == "false||댓글내역이 없습니다")
                             {
-                                return new DeleteResult(false, "댓글내역이 없습니다.");
+                                return new DeleteResult(false, "이미 삭제된 리플입니다.");
                             }
                             else
                             {

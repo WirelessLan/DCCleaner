@@ -143,9 +143,11 @@ namespace DCCleaner
 
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
-                for(int i = articleList.Count - 1;i>-1;i--)
+                int rmIdx = 0;  // 삭제 인덱스. 0부터 위로
+
+                for(int i = 0; i < articleList.Count; i++)
                 {
-                    ArticleInfo info = articleList[i];
+                    ArticleInfo info = articleList[rmIdx];
                     ArticleInfo res = null;
                     try
                     {
@@ -153,6 +155,8 @@ namespace DCCleaner
                     }
                     catch
                     {
+                        // 삭제 못한 글은 무시
+                        rmIdx++;
                         continue;
                     }
 
@@ -166,13 +170,20 @@ namespace DCCleaner
                                 break;
                         }
 
+                    // 재시도에도 삭제 실패했을 경우,
+                    if (res.ActualDelete == false)
+                    {
+                        rmIdx++;
+                        continue;   // 무시
+                    }
+
                     // 갤로그도 삭제일 경우에만 화면 지움
                     if (both)
                     {
-                        articleList.RemoveAt(i);
+                        articleList.RemoveAt(rmIdx);
                         this.Invoke(new Action(() =>
                         {
-                            dgv_ArticleList.Rows.RemoveAt(i);
+                            dgv_ArticleList.Rows.RemoveAt(rmIdx);
                             gb_ArticleGroup.Text = "내가 쓴 글 [" + articleList.Count.ToString() + "]";
                         }));
                     }
@@ -225,9 +236,11 @@ namespace DCCleaner
 
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
-                for (int i = commentList.Count - 1; i > -1; i--)
+                int rmIdx = 0;  // 삭제 인덱스. 0부터 위로
+
+                for (int i = 0; i < commentList.Count; i++)
                 {
-                    CommentInfo info = commentList[i];
+                    CommentInfo info = commentList[rmIdx];
                     CommentInfo res = null;
                     try
                     {
@@ -235,25 +248,34 @@ namespace DCCleaner
                     }
                     catch
                     {
+                        // 삭제 못한 글은 무시
+                        rmIdx++;
                         continue;
                     }
-                    if (res.GallogDelete == false)
+                    if (res.ActualDelete == false)
                         for (int j = 0; j < 5; j++)
                         {
                             // 실패시, Sleep 후 최대 5회 재시도
                             Thread.Sleep(200);
                             res = conn.DeleteComment(info, false);
-                            if (res.GallogDelete)
+                            if (res.ActualDelete)
                                 break;
                         }
+
+                    // 재시도에도 삭제 실패했을 경우,
+                    if (res.ActualDelete == false)
+                    {
+                        rmIdx++;
+                        continue;   // 무시
+                    }
 
                     // 갤로그도 삭제일 경우에만 화면 지움
                     if (both)
                     {
-                        commentList.RemoveAt(i);
+                        commentList.RemoveAt(rmIdx);
                         this.Invoke(new Action(() =>
                         {
-                            dgv_CommentList.Rows.RemoveAt(i);
+                            dgv_CommentList.Rows.RemoveAt(rmIdx);
                             gb_CommentGroup.Text = "내가 쓴 리플 [" + commentList.Count.ToString() + "]";
                         }));
                     }

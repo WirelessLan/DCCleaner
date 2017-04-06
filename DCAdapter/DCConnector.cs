@@ -276,11 +276,11 @@ namespace DCAdapter
 
             DeleteResult res1 = HttpRequest.RequestDeleteComment(gall_id, article_id, comment_id, ref cookies);
 
-            if (!res1.Success && res1.ErrorMessage != "댓글내역이 없습니다.")
+            if (!res1.Success && res1.ErrorMessage != "이미 삭제된 리플입니다.")
             {
                 info.ActualDelete = false;
                 info.GallogDelete = false;
-                info.DeleteMessage = "갤러리의 글을 지우는데 실패하였습니다 - [" + res1.ErrorMessage + "]";
+                info.DeleteMessage = "갤러리의 리플을 지우는데 실패하였습니다 - [" + res1.ErrorMessage + "]";
 
                 return info;
             }
@@ -295,7 +295,7 @@ namespace DCAdapter
                 {
                     info.ActualDelete = true;
                     info.GallogDelete = false;
-                    info.DeleteMessage = "갤로그의 글을 지우는데 실패하였습니다 - [" + res2.ErrorMessage + "]";
+                    info.DeleteMessage = "갤로그의 리플을 지우는데 실패하였습니다 - [" + res2.ErrorMessage + "]";
 
                     return info;
                 }
