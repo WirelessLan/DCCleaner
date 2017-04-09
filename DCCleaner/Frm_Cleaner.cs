@@ -160,18 +160,18 @@ namespace DCCleaner
                         continue;
                     }
 
-                    if (res.ActualDelete == false)
-                        for (int j = 0; j < 5; j++)
+                    if (!res.ActualDelete || (both && !res.GallogDelete))
+                        for (int j = 0; j < 1; j++)
                         {
-                            // 실패시, Sleep 후 최대 5회 재시도
-                            Thread.Sleep(200);
-                            res = conn.DeleteArticle(info, false);
-                            if (res.ActualDelete)
+                            // 실패시, Sleep 후 1회 재시도
+                            Thread.Sleep(100);
+                            res = conn.DeleteArticle(info, both);
+                            if (res.ActualDelete && (!both || res.GallogDelete))
                                 break;
                         }
 
                     // 재시도에도 삭제 실패했을 경우,
-                    if (res.ActualDelete == false)
+                    if (!res.ActualDelete || (both && !res.GallogDelete))
                     {
                         rmIdx++;
                         continue;   // 무시
@@ -248,22 +248,22 @@ namespace DCCleaner
                     }
                     catch
                     {
-                        // 삭제 못한 글은 무시
+                        // 삭제 못한 리플은 무시
                         rmIdx++;
                         continue;
                     }
-                    if (res.ActualDelete == false)
-                        for (int j = 0; j < 5; j++)
+                    if (!res.ActualDelete || (both && !res.GallogDelete))
+                        for (int j = 0; j < 1; j++)
                         {
-                            // 실패시, Sleep 후 최대 5회 재시도
-                            Thread.Sleep(200);
-                            res = conn.DeleteComment(info, false);
-                            if (res.ActualDelete)
+                            // 실패시, Sleep 후 1회 재시도
+                            Thread.Sleep(100);
+                            res = conn.DeleteComment(info, both);
+                            if (res.ActualDelete && (!both || res.GallogDelete))
                                 break;
                         }
 
                     // 재시도에도 삭제 실패했을 경우,
-                    if (res.ActualDelete == false)
+                    if (!res.ActualDelete || (both && !res.GallogDelete))
                     {
                         rmIdx++;
                         continue;   // 무시
@@ -353,7 +353,8 @@ namespace DCCleaner
             {
                 conn.DeleteArticle(target, true);
 
-                if (target.GallogDelete)
+                // 갤로그와 갤러리 둘다 삭제 되었을 경우
+                if (target.ActualDelete && target.GallogDelete)
                 {
                     articleList.RemoveAt(selectedIdx);
 
@@ -362,6 +363,19 @@ namespace DCCleaner
                         dgv_ArticleList.Rows.RemoveAt(selectedIdx);
                         gb_ArticleGroup.Text = "내가 쓴 글 [" + articleList.Count.ToString() + "]";
                         lbl_Status.Text = "글을 삭제하였습니다.";
+                    }));
+                }
+                else
+                {
+                    string rmErrMsg = "";
+                    if (!target.ActualDelete)
+                        rmErrMsg = "글을 삭제하는데 실패하였습니다. - 갤러리 삭제 실패";
+                    else
+                        rmErrMsg = "글을 삭제하는데 실패하였습니다. - 갤로그 삭제 실패";
+
+                    this.Invoke(new Action(() =>
+                    {
+                        lbl_Status.Text = rmErrMsg;
                     }));
                 }
             }));
@@ -410,7 +424,8 @@ namespace DCCleaner
             {
                 conn.DeleteComment(target, true);
 
-                if (target.GallogDelete)
+                // 갤로그와 갤러리 둘다 삭제 되었을 경우
+                if (target.ActualDelete && target.GallogDelete)
                 {
                     commentList.RemoveAt(selectedIdx);
 
@@ -419,6 +434,19 @@ namespace DCCleaner
                         dgv_CommentList.Rows.RemoveAt(selectedIdx);
                         gb_CommentGroup.Text = "내가 쓴 리플 [" + commentList.Count.ToString() + "]";
                         lbl_Status.Text = "리플을 삭제하였습니다.";
+                    }));
+                }
+                else
+                {
+                    string rmErrMsg = "";
+                    if (!target.ActualDelete)
+                        rmErrMsg = "리플을 삭제하는데 실패하였습니다. - 갤러리 삭제 실패";
+                    else
+                        rmErrMsg = "리플을 삭제하는데 실패하였습니다. - 갤로그 삭제 실패";
+
+                    this.Invoke(new Action(() =>
+                    {
+                        lbl_Status.Text = rmErrMsg;
                     }));
                 }
             }));

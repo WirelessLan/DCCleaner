@@ -390,8 +390,15 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            // 성공/실패 여부를 확인할 수 없어 그냥 성공했다 가정
-                            return new DeleteResult(true, "");
+                            // 성공
+                            if (result.Contains("GidMgr.resetGalleryData(2);"))
+                            {
+                                return new DeleteResult(true, "");
+                            }
+                            else
+                            {
+                                return new DeleteResult(false, "알 수 없는 오류입니다.");
+                            }
                         }
                     }
                 }
@@ -449,8 +456,15 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            // 성공/실패 여부를 확인할 수 없어 그냥 성공했다 가정
-                            return new DeleteResult(true, "");
+                            // 성공
+                            if(result.Contains("GidMgr.resetGalleryData(2);"))
+                            {
+                                return new DeleteResult(true, "");
+                            }
+                            else
+                            {
+                                return new DeleteResult(false, "알 수 없는 오류입니다.");
+                            }
                         }
                     }
                 }
