@@ -144,8 +144,9 @@ namespace DCCleaner
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
                 int rmIdx = 0;  // 삭제 인덱스. 0부터 위로
+                int delCnt = articleList.Count;
 
-                for(int i = 0; i < articleList.Count; i++)
+                for (int i = 0; i < delCnt; i++)
                 {
                     ArticleInfo info = articleList[rmIdx];
                     ArticleInfo res = null;
@@ -177,6 +178,12 @@ namespace DCCleaner
                         continue;   // 무시
                     }
 
+                    info.ActualDelete = res.ActualDelete;
+                    info.GallogDelete = res.GallogDelete;
+                    info.DeleteMessage = res.DeleteMessage;
+
+                    articleList[rmIdx] = info;
+
                     // 갤로그도 삭제일 경우에만 화면 지움
                     if (both)
                     {
@@ -187,10 +194,6 @@ namespace DCCleaner
                             gb_ArticleGroup.Text = "내가 쓴 글 [" + articleList.Count.ToString() + "]";
                         }));
                     }
-
-                    info.ActualDelete = res.ActualDelete;
-                    info.GallogDelete = res.GallogDelete;
-                    info.DeleteMessage = res.DeleteMessage;
                 }
 
                 this.Invoke(new Action(() =>
@@ -237,8 +240,9 @@ namespace DCCleaner
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
                 int rmIdx = 0;  // 삭제 인덱스. 0부터 위로
+                int delCnt = commentList.Count;
 
-                for (int i = 0; i < commentList.Count; i++)
+                for (int i = 0; i < delCnt; i++)
                 {
                     CommentInfo info = commentList[rmIdx];
                     CommentInfo res = null;
@@ -269,6 +273,12 @@ namespace DCCleaner
                         continue;   // 무시
                     }
 
+                    info.ActualDelete = res.ActualDelete;
+                    info.GallogDelete = res.GallogDelete;
+                    info.DeleteMessage = res.DeleteMessage;
+
+                    commentList[rmIdx] = info;
+
                     // 갤로그도 삭제일 경우에만 화면 지움
                     if (both)
                     {
@@ -279,10 +289,6 @@ namespace DCCleaner
                             gb_CommentGroup.Text = "내가 쓴 리플 [" + commentList.Count.ToString() + "]";
                         }));
                     }
-
-                    info.ActualDelete = res.ActualDelete;
-                    info.GallogDelete = res.GallogDelete;
-                    info.DeleteMessage = res.DeleteMessage;
                 }
 
                 this.Invoke(new Action(() =>
@@ -454,6 +460,64 @@ namespace DCCleaner
             lbl_Status.Text = "리플을 삭제하는 중입니다...";
 
             loadingThread.Start();
+        }
+
+        private void dgv_ArticleList_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left)
+            {
+                return;
+            }
+
+            int currentMouseOverRow = dgv_ArticleList.HitTest(e.X, e.Y).RowIndex;
+
+            if (currentMouseOverRow >= 0)
+            {
+                dgv_ArticleList.ClearSelection();
+
+                dgv_ArticleList.Rows[currentMouseOverRow].Selected = true;
+            }
+
+            if (dgv_ArticleList.SelectedRows == null)
+                return;
+
+            int selectedIdx = dgv_ArticleList.SelectedRows[0].Index;
+            ArticleInfo target = articleList[selectedIdx];
+
+            string msg = "갤러리 삭제 : " + (target.ActualDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
+                       + "갤로그 삭제 : " + (target.GallogDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
+                       + "메시지 : " + (target.DeleteMessage);
+
+            MessageBox.Show(msg, "글 삭제 정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void dgv_CommentList_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if(e.Button != MouseButtons.Left)
+            {
+                return;
+            }
+
+            int currentMouseOverRow = dgv_CommentList.HitTest(e.X, e.Y).RowIndex;
+
+            if (currentMouseOverRow >= 0)
+            {
+                dgv_CommentList.ClearSelection();
+
+                dgv_CommentList.Rows[currentMouseOverRow].Selected = true;
+            }
+
+            if (dgv_CommentList.SelectedRows == null)
+                return;
+
+            int selectedIdx = dgv_CommentList.SelectedRows[0].Index;
+            CommentInfo target = commentList[selectedIdx];
+
+            string msg = "갤러리 삭제 : " + (target.ActualDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
+                       + "갤로그 삭제 : " + (target.GallogDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
+                       + "메시지 : " + (target.DeleteMessage);
+
+            MessageBox.Show(msg, "리플 삭제 정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void LoadArticleList()

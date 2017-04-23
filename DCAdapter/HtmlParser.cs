@@ -77,7 +77,7 @@ namespace DCAdapter
 
             if (chk7Node == null)
             {
-                if (pageHtml.Contains("/error/deleted"))
+                if (pageHtml.Contains("/error/deleted") || pageHtml.Contains("/error/comment_error"))
                 {
                     throw new Exception("이미 삭제된 리플입니다.");
                 }

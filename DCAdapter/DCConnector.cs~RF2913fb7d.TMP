@@ -144,16 +144,12 @@ namespace DCAdapter
                     {
                         try
                         {
-                            Thread.Sleep(200);
                             newArticleList = LoadArticleList(i + 1);
                         }
                         catch
                         {
                             continue;
                         }
-
-                        if (newArticleList != null)
-                            break;
                     }
 
                     if (newArticleList == null)
@@ -200,16 +196,12 @@ namespace DCAdapter
                     {
                         try
                         {
-                            Thread.Sleep(200);
                             newCommentList = LoadCommentList(i + 1);
                         }
                         catch
                         {
                             continue;
                         }
-
-                        if (newCommentList != null)
-                            break;
                     }
 
                     if(newCommentList == null)
@@ -259,20 +251,8 @@ namespace DCAdapter
             }
 
             Thread.Sleep(delay);
-
-            DeleteResult res1 = null;
-            try
-            {
-                res1 = HttpRequest.RequestDeleteAritcle(gall_id, article_id, ref cookies);
-            }
-            catch(Exception ex)
-            {
-                info.ActualDelete = false;
-                info.GallogDelete = false;
-                info.DeleteMessage = "갤러리의 글을 지우는데 실패하였습니다 - [" + ex.Message + "]";
-
-                return info;
-            }
+            
+            DeleteResult res1 =  HttpRequest.RequestDeleteAritcle(gall_id, article_id, ref cookies);
 
             if (!res1.Success && res1.ErrorMessage != "이미 삭제된 글입니다.")
             {
@@ -287,20 +267,7 @@ namespace DCAdapter
             {
                 Thread.Sleep(delay);
 
-                DeleteResult res2 = null;
-
-                try
-                {
-                    res2 = HttpRequest.RequestDeleteGallogArticle(user_id, gall_id, gall_no, article_id, logNo, delay, ref cookies);
-                }
-                catch (Exception ex)
-                {
-                    info.ActualDelete = true;
-                    info.GallogDelete = false;
-                    info.DeleteMessage = "갤로그의 글을 지우는데 실패하였습니다 - [" + ex.Message + "]";
-
-                    return info;
-                }
+                DeleteResult res2 = HttpRequest.RequestDeleteGallogArticle(user_id, gall_id, gall_no, article_id, logNo, delay, ref cookies);
 
                 if (!res2.Success)
                 {
@@ -339,20 +306,7 @@ namespace DCAdapter
 
             Thread.Sleep(delay);
 
-            DeleteResult res1 = null;
-
-            try
-            {
-                res1 = HttpRequest.RequestDeleteComment(gall_id, article_id, comment_id, ref cookies);
-            }
-            catch(Exception ex)
-            {
-                info.ActualDelete = false;
-                info.GallogDelete = false;
-                info.DeleteMessage = "갤러리의 리플을 지우는데 실패하였습니다 - [" + ex.Message + "]";
-
-                return info;
-            }
+            DeleteResult res1 = HttpRequest.RequestDeleteComment(gall_id, article_id, comment_id, ref cookies);
 
             if (!res1.Success && res1.ErrorMessage != "이미 삭제된 리플입니다.")
             {
@@ -367,20 +321,7 @@ namespace DCAdapter
             {
                 Thread.Sleep(delay);
 
-                DeleteResult res2 = null;
-
-                try
-                {
-                    res2 = HttpRequest.RequestDeleteGallogComment(user_id, gall_id, gall_no, article_id, comment_id, logNo, delay, ref cookies);
-                }
-                catch(Exception ex)
-                {
-                    info.ActualDelete = true;
-                    info.GallogDelete = false;
-                    info.DeleteMessage = "갤로그의 리플을 지우는데 실패하였습니다 - [" + ex.Message + "]";
-
-                    return info;
-                }
+                DeleteResult res2 = HttpRequest.RequestDeleteGallogComment(user_id, gall_id, gall_no, article_id, comment_id, logNo, delay, ref cookies);
 
                 if (!res2.Success)
                 {

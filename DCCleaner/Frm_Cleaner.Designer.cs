@@ -132,6 +132,7 @@
             this.dgv_CommentList.Size = new System.Drawing.Size(296, 328);
             this.dgv_CommentList.TabIndex = 3;
             this.dgv_CommentList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dgv_CommentList_MouseClick);
+            this.dgv_CommentList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.dgv_CommentList_MouseDoubleClick);
             // 
             // col_Name
             // 
@@ -227,6 +228,7 @@
             this.dgv_ArticleList.Size = new System.Drawing.Size(295, 327);
             this.dgv_ArticleList.TabIndex = 2;
             this.dgv_ArticleList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dgv_ArticleList_MouseClick);
+            this.dgv_ArticleList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.dgv_ArticleList_MouseDoubleClick);
             // 
             // col_Title
             // 

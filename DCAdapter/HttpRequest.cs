@@ -161,6 +161,7 @@ namespace DCAdapter
             req.UserAgent = UserAgent;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
             req.Method = "GET";
+            req.Proxy = null;
 
             using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
             {
@@ -193,6 +194,10 @@ namespace DCAdapter
             req.CookieContainer = cookies;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
             req.Method = "GET";
+            req.Proxy = null;
+            req.Timeout = 10 * 1000; // 20초 timeout
+            req.ServicePoint.ConnectionLeaseTimeout = 10 * 1000;
+            req.ServicePoint.MaxIdleTime = 10 * 1000;
 
             using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
             {
@@ -258,7 +263,7 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            if(result.Contains("true"))
+                            if(result == "true||" + gallId)
                             {
                                 return new DeleteResult(true, "");
                             }
@@ -276,7 +281,7 @@ namespace DCAdapter
 
         internal static DeleteResult RequestDeleteComment(string gallid, string articleid, string commentid, ref CookieContainer cookies)
         {
-            string pageHtml = RequestArticlePage(gallid, articleid, ref cookies);
+            string pageHtml = RequestArticleCommentViewPage(gallid, articleid, ref cookies);
             string ci_t = null, check7 = null;
             
             try
@@ -492,10 +497,10 @@ namespace DCAdapter
             response.Close();
         }
 
-        private static string RequestArticlePage(string gallid, string articleid, ref CookieContainer cookies)
+        private static string RequestArticleCommentViewPage(string gallid, string articleid, ref CookieContainer cookies)
         {
-            const string _reqURL = "http://gall.dcinside.com/board/view/";
-            string referer = "http://gall.dcinside.com/board/view/?id=" + gallid;
+            const string _reqURL = "http://gall.dcinside.com/board/comment_view/";
+            string referer = "http://gall.dcinside.com/board/lists/?id=" + gallid;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?id=" + gallid + "&no=" + articleid);
             
             req.Method = "GET";
