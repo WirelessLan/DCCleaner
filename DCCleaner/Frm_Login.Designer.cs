@@ -35,6 +35,7 @@
             this.btn_Login = new System.Windows.Forms.Button();
             this.lbl_Error = new System.Windows.Forms.Label();
             this.gb_Login = new System.Windows.Forms.GroupBox();
+            this.btn_NoAccn = new System.Windows.Forms.Button();
             this.gb_Login.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -75,7 +76,7 @@
             // 
             // btn_Login
             // 
-            this.btn_Login.Location = new System.Drawing.Point(210, 138);
+            this.btn_Login.Location = new System.Drawing.Point(129, 138);
             this.btn_Login.Name = "btn_Login";
             this.btn_Login.Size = new System.Drawing.Size(75, 23);
             this.btn_Login.TabIndex = 3;
@@ -105,11 +106,22 @@
             this.gb_Login.TabStop = false;
             this.gb_Login.Text = "로그인";
             // 
+            // btn_NoAccn
+            // 
+            this.btn_NoAccn.Location = new System.Drawing.Point(210, 138);
+            this.btn_NoAccn.Name = "btn_NoAccn";
+            this.btn_NoAccn.Size = new System.Drawing.Size(75, 23);
+            this.btn_NoAccn.TabIndex = 4;
+            this.btn_NoAccn.Text = "유동닉";
+            this.btn_NoAccn.UseVisualStyleBackColor = true;
+            this.btn_NoAccn.Click += new System.EventHandler(this.btn_NoAccn_Click);
+            // 
             // Frm_Login
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(303, 173);
+            this.Controls.Add(this.btn_NoAccn);
             this.Controls.Add(this.gb_Login);
             this.Controls.Add(this.lbl_Error);
             this.Controls.Add(this.btn_Login);
@@ -135,6 +147,7 @@
         private System.Windows.Forms.Button btn_Login;
         private System.Windows.Forms.Label lbl_Error;
         private System.Windows.Forms.GroupBox gb_Login;
+        private System.Windows.Forms.Button btn_NoAccn;
     }
 }
 

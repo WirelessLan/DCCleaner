@@ -12,6 +12,7 @@ namespace DCAdapter
         IDError,
         ErrorBoth,
         NotLogin,
+        NoSuchID,
         Unknown
     };
 }

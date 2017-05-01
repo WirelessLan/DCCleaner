@@ -56,7 +56,7 @@ namespace DCAdapter
         }
 
         /// <summary>
-        /// DC인사이드 서버에 주어진 ID와 비밀번호로 로그인을 요청합니다.
+        /// DC 인사이드 서버에 주어진 ID와 비밀번호로 로그인을 요청합니다.
         /// </summary>
         /// <param name="id">사용자의 ID</param>
         /// <param name="pw">사용자의 비밀번호</param>
@@ -238,6 +238,71 @@ namespace DCAdapter
             return articleList;
         }
 
+        public List<SearchedArticleInfo> SearchArticles(string gall_id, GalleryType gallType, string nickname, ref int searchPos, ref int searchPage, out bool cont)
+        {
+            List<SearchedArticleInfo> searchedArticleList = new List<SearchedArticleInfo>();
+            int maxPage = 1;
+
+            cont = false;
+
+            if(searchPos != -1)
+            {
+                string searchHtml = "";
+
+                try
+                {
+                    searchHtml = HttpRequest.RequestGalleryNickNameSearchPage(gall_id, gallType, nickname, ref searchPos, ref searchPage, ref cookies);
+                }
+                catch(Exception ex)
+                {
+                    if(ex.Message == "해당 갤러리는 존재하지 않습니다.")
+                    {
+                        throw new Exception(ex.Message);
+                    }
+
+                    for (int j = 0; j < 3; j++)
+                    {
+                        try
+                        {
+                            Thread.Sleep(200);
+                            searchHtml = HttpRequest.RequestGalleryNickNameSearchPage(gall_id, gallType, nickname, ref searchPos, ref searchPage, ref cookies);
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+                        
+                        if (searchHtml == null)
+                            throw new Exception("글을 검색하는데 실패하였습니다.");
+                    }
+                }
+
+                int tmpPos = searchPos;
+
+                List<SearchedArticleInfo> newSearchedList = HtmlParser.GetSearchedArticleList(searchHtml, gall_id, nickname, gallType, isLogin, ref searchPos, out maxPage);
+
+                searchedArticleList.AddRange(newSearchedList);
+
+                if (searchPage < maxPage)
+                {
+                    searchPage++;
+                    searchPos = tmpPos;
+                }
+                else
+                {
+                    searchPage = 1;
+                }
+
+                cont = true;
+            }
+            else
+            {
+                cont = false;
+            }
+
+            return searchedArticleList;
+        }
+
         public ArticleInfo DeleteArticle(ArticleInfo info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
@@ -260,12 +325,23 @@ namespace DCAdapter
 
             Thread.Sleep(delay);
 
+            return DeleteArticle(info, gall_id, gall_no, article_id, logNo, GalleryType.Normal, both);
+        }
+
+        public ArticleInfo DeleteArticle(ArticleInfo info, string gall_id, string gall_no, string article_id, string logNo, GalleryType gallType, bool both)
+        {
+            // HTTP 요청에 딜레이를 주어 서버 오류 방지
+            int delay = 50;
+
             DeleteResult res1 = null;
             try
             {
-                res1 = HttpRequest.RequestDeleteAritcle(gall_id, article_id, ref cookies);
+                if (IsLogin)
+                    res1 = HttpRequest.RequestDeleteArticle(gall_id, article_id, gallType, delay, ref cookies);
+                else
+                    res1 = HttpRequest.RequestDeleteFlowArticle(gall_id, article_id, logNo, gallType, delay, ref cookies);   // logNo를 패스워드로 사용
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 info.ActualDelete = false;
                 info.GallogDelete = false;
@@ -282,7 +358,7 @@ namespace DCAdapter
 
                 return info;
             }
-
+            
             if (both)
             {
                 Thread.Sleep(delay);
@@ -339,13 +415,21 @@ namespace DCAdapter
 
             Thread.Sleep(delay);
 
+            return DeleteComment(info, gall_id, gall_no, article_id, comment_id, logNo, both);
+        }
+
+        public CommentInfo DeleteComment(CommentInfo info, string gall_id, string gall_no, string article_id, string comment_id, string logNo, bool both)
+        {
+            // HTTP 요청에 딜레이를 주어 서버 오류 방지
+            int delay = 50;
+
             DeleteResult res1 = null;
 
             try
             {
                 res1 = HttpRequest.RequestDeleteComment(gall_id, article_id, comment_id, ref cookies);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 info.ActualDelete = false;
                 info.GallogDelete = false;
@@ -373,7 +457,7 @@ namespace DCAdapter
                 {
                     res2 = HttpRequest.RequestDeleteGallogComment(user_id, gall_id, gall_no, article_id, comment_id, logNo, delay, ref cookies);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     info.ActualDelete = true;
                     info.GallogDelete = false;

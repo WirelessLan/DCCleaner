@@ -47,10 +47,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SearchedArticleInfo.cs" />
     <Compile Include="ArticleInfo.cs" />
     <Compile Include="CommentInfo.cs" />
     <Compile Include="DCConnector.cs" />
     <Compile Include="DeleteResult.cs" />
+    <Compile Include="GalleryType.cs" />
     <Compile Include="HtmlParser.cs" />
     <Compile Include="HttpRequest.cs" />
     <Compile Include="LoginStatus.cs" />

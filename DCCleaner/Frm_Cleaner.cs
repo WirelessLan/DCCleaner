@@ -12,12 +12,28 @@ namespace DCCleaner
         DCConnector conn;
         List<ArticleInfo> articleList = null;
         List<CommentInfo> commentList = null;
+        List<SearchedArticleInfo> searchedList = null;
+        bool isSearching = false;
         Thread loadingThread = null;
         
         public Frm_Cleaner(DCConnector _conn)
         {
             InitializeComponent();
             this.conn = _conn;
+        }
+
+        private void Frm_Cleaner_Load(object sender, EventArgs e)
+        {
+            if(!conn.IsLogin)
+            {
+                tc_CleanerTabContainer.SelectedTab = tp_SearchBase;
+                lbl_SearchBaseWarn.Text = "※ 주의 : 유동닉은 갤로그 기반 삭제 및 리플 삭제가 불가능합니다.";
+            }
+            else
+            {
+                tc_CleanerTabContainer.SelectedTab = tp_GallogBase;
+                lbl_SearchBaseWarn.Text = "※ 주의 : 검색 기반 삭제는 리플 삭제가 불가능하며, 로그인 시 고정닉 검색 및 삭제만 가능합니다.";
+            }
         }
 
         private void btn_LoadArticles_Click(object sender, EventArgs e)
@@ -33,37 +49,30 @@ namespace DCCleaner
                 {
                     articleList = conn.LoadGallogArticles();
                 }
-                catch(Exception ex)
+                catch (ThreadAbortException)
                 {
-                    try
-                    {
-                        this.Invoke(new Action(() =>
-                        {
-                            lbl_Status.Text = ex.Message;
-                        }));
-                    }
-                    catch
-                    {
-                        return;
-                    }
                     return;
+                }
+                catch (Exception ex)
+                {
+                    SetStatusMessage(ex.Message);
                 }
 
                 this.Invoke(new Action(() =>
                 {
                     if (articleList == null)
                     {
-                        MessageBox.Show("내가 쓴 글 목록을 불러올 수 없습니다.", "오류");
+                        SetStatusMessage("내가 쓴 글 목록을 불러올 수 없습니다.");
                         return;
                     }
 
                     LoadArticleList();
 
-                    lbl_Status.Text = "쓴 글 목록을 불러왔습니다 - 총 " + articleList.Count.ToString() + "개";
+                    SetStatusMessage("쓴 글 목록을 불러왔습니다 - 총 " + articleList.Count.ToString() + "개");
                 }));
             }));
 
-            lbl_Status.Text = "쓴 글 목록을 불러오는 중입니다...";
+            SetStatusMessage("쓴 글 목록을 불러오는 중입니다...");
 
             loadingThread.Start();
         }
@@ -81,19 +90,13 @@ namespace DCCleaner
                 {
                     commentList = conn.LoadGallogComments();
                 }
+                catch (ThreadAbortException)
+                {
+                    return;
+                }
                 catch (Exception ex)
                 {
-                    try
-                    {
-                        this.Invoke(new Action(() =>
-                        {
-                            lbl_Status.Text = ex.Message;
-                        }));
-                    }
-                    catch
-                    {
-                        return;
-                    }
+                    SetStatusMessage(ex.Message);
                     return;
                 }
 
@@ -101,24 +104,23 @@ namespace DCCleaner
                 {
                     if (commentList == null)
                     {
-                        MessageBox.Show("내가 쓴 리플 목록을 불러올 수 없습니다.", "오류");
+                        SetStatusMessage("내가 쓴 리플 목록을 불러올 수 없습니다.");
                         return;
                     }
 
                     LoadCommentList();
 
-                    lbl_Status.Text = "쓴 리플 목록을 불러왔습니다 - 총 " + commentList.Count.ToString() + "개";
+                    SetStatusMessage("쓴 리플 목록을 불러왔습니다 - 총 " + commentList.Count.ToString() + "개");
                 }));
             }));
 
-            lbl_Status.Text = "쓴 리플 목록을 불러오는 중입니다...";
+            SetStatusMessage("쓴 리플 목록을 불러오는 중입니다...");
 
             loadingThread.Start();
         }
 
         private void btn_RemoveGallArticle_Click(object sender, EventArgs e)
         {
-
             RemoveArticles(false);
         }
 
@@ -133,7 +135,7 @@ namespace DCCleaner
         /// <param name="both">True : 갤로그도, False : 갤러리만</param>
         private void RemoveArticles(bool both)
         {
-            if (articleList == null)
+            if (articleList == null || articleList.Count == 0)
                 return;
 
             if (loadingThread != null && loadingThread.IsAlive)
@@ -153,6 +155,10 @@ namespace DCCleaner
                     try
                     {
                         res = conn.DeleteArticle(info, both);
+                    }
+                    catch (ThreadAbortException)
+                    {
+                        return;
                     }
                     catch
                     {
@@ -195,20 +201,17 @@ namespace DCCleaner
                         }));
                     }
                 }
-
-                this.Invoke(new Action(() =>
-                {
-                    if(both)
-                        lbl_Status.Text = "쓴 글 - 갤로그도 삭제 완료";
-                    else
-                        lbl_Status.Text = "쓴 글 - 갤만 삭제 완료";
-                }));
+                
+                if (both)
+                    SetStatusMessage("쓴 글 - 갤로그도 삭제 완료");
+                else
+                    SetStatusMessage("쓴 글 - 갤러리만 삭제 완료");
             }));
 
-            if(both)
-                lbl_Status.Text = "쓴 글 - 갤로그도 삭제중...";
+            if (both)
+                SetStatusMessage("쓴 글 - 갤로그도 삭제중...");
             else
-                lbl_Status.Text = "쓴 글 - 갤만 삭제중...";
+                SetStatusMessage("쓴 글 - 갤러리만 삭제중...");
 
             loadingThread.Start();
         }
@@ -229,7 +232,7 @@ namespace DCCleaner
         /// <param name="both">True : 갤로그도 False : 갤러리만</param>
         private void RemoveComments(bool both)
         {
-            if (commentList == null)
+            if (commentList == null || commentList.Count == 0)
                 return;
 
             if (loadingThread != null && loadingThread.IsAlive)
@@ -250,12 +253,17 @@ namespace DCCleaner
                     {
                         res = conn.DeleteComment(info, both);
                     }
+                    catch (ThreadAbortException)
+                    {
+                        return;
+                    }
                     catch
                     {
                         // 삭제 못한 리플은 무시
                         rmIdx++;
                         continue;
                     }
+
                     if (!res.ActualDelete || (both && !res.GallogDelete))
                         for (int j = 0; j < 1; j++)
                         {
@@ -291,19 +299,16 @@ namespace DCCleaner
                     }
                 }
 
-                this.Invoke(new Action(() =>
-                {
-                    if(both)
-                        lbl_Status.Text = "쓴 리플 - 갤로그도 삭제 완료";
-                    else
-                        lbl_Status.Text = "쓴 리플 - 갤만 삭제 완료";
-                }));
+                if (both)
+                    SetStatusMessage("쓴 리플 - 갤로그도 삭제 완료");
+                else
+                    SetStatusMessage("쓴 리플 - 갤러리만 삭제 완료");
             }));
 
-            if(both)
-                lbl_Status.Text = "쓴 리플 - 갤로그도 삭제중...";
+            if (both)
+                SetStatusMessage("쓴 리플 - 갤로그도 삭제중...");
             else
-                lbl_Status.Text = "쓴 리플 - 갤만 삭제중...";
+                SetStatusMessage("쓴 리플 - 갤러리만 삭제중...");
 
             loadingThread.Start();
         }
@@ -357,7 +362,14 @@ namespace DCCleaner
 
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
-                conn.DeleteArticle(target, true);
+                try
+                {
+                    conn.DeleteArticle(target, true);
+                }
+                catch
+                {
+                    return;
+                }
 
                 // 갤로그와 갤러리 둘다 삭제 되었을 경우
                 if (target.ActualDelete && target.GallogDelete)
@@ -368,7 +380,7 @@ namespace DCCleaner
                     {
                         dgv_ArticleList.Rows.RemoveAt(selectedIdx);
                         gb_ArticleGroup.Text = "내가 쓴 글 [" + articleList.Count.ToString() + "]";
-                        lbl_Status.Text = "글을 삭제하였습니다.";
+                        SetStatusMessage("글을 삭제하였습니다.");
                     }));
                 }
                 else
@@ -381,12 +393,12 @@ namespace DCCleaner
 
                     this.Invoke(new Action(() =>
                     {
-                        lbl_Status.Text = rmErrMsg;
+                        SetStatusMessage(rmErrMsg);
                     }));
                 }
             }));
 
-            lbl_Status.Text = "글을 삭제하는 중입니다...";
+            SetStatusMessage("글을 삭제하는 중입니다...");
 
             loadingThread.Start();
         }
@@ -428,7 +440,14 @@ namespace DCCleaner
 
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
-                conn.DeleteComment(target, true);
+                try
+                {
+                    conn.DeleteComment(target, true);
+                }
+                catch
+                {
+                    return;
+                }
 
                 // 갤로그와 갤러리 둘다 삭제 되었을 경우
                 if (target.ActualDelete && target.GallogDelete)
@@ -439,7 +458,7 @@ namespace DCCleaner
                     {
                         dgv_CommentList.Rows.RemoveAt(selectedIdx);
                         gb_CommentGroup.Text = "내가 쓴 리플 [" + commentList.Count.ToString() + "]";
-                        lbl_Status.Text = "리플을 삭제하였습니다.";
+                        SetStatusMessage("리플을 삭제하였습니다.");
                     }));
                 }
                 else
@@ -452,12 +471,12 @@ namespace DCCleaner
 
                     this.Invoke(new Action(() =>
                     {
-                        lbl_Status.Text = rmErrMsg;
+                        SetStatusMessage(rmErrMsg);
                     }));
                 }
             }));
 
-            lbl_Status.Text = "리플을 삭제하는 중입니다...";
+            SetStatusMessage("리플을 삭제하는 중입니다...");
 
             loadingThread.Start();
         }
@@ -544,6 +563,374 @@ namespace DCCleaner
 
             string loadedCnt = commentList.Count.ToString();
             gb_CommentGroup.Text = "내가 쓴 리플 [" + loadedCnt + "]";
+        }
+
+        private void tc_CleanerTabContainer_Selecting(object sender, TabControlCancelEventArgs e)
+        {
+            if (loadingThread != null && loadingThread.IsAlive)
+            {
+                e.Cancel = true;
+
+                return;
+            }
+
+            if (e.TabPage == tp_GallogBase && !conn.IsLogin)
+            {
+                SetStatusMessage("유동닉은 갤로그 기반 삭제를 할 수 없습니다.");
+                e.Cancel = true;
+            }
+        }
+
+        private void btn_SearchArticle_Click(object sender, EventArgs e)
+        {
+            if (loadingThread != null && loadingThread.IsAlive)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(tb_SearchGalleryID.Text))
+            {
+                tb_SearchGalleryID.Focus();
+                SetStatusMessage("검색할 갤러리 ID를 입력해주세요.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(tb_SearchNickName.Text))
+            {
+                tb_SearchNickName.Focus();
+                SetStatusMessage("검색할 닉네임을 입력해주세요.");
+                return;
+            }
+
+            // 기존 검색목록 삭제
+            dgv_SearchArticle.Rows.Clear();
+            if (searchedList != null)
+                searchedList.Clear();
+            else
+                searchedList = new List<SearchedArticleInfo>();
+
+            string gall_id, nickname;
+            gall_id = tb_SearchGalleryID.Text.Trim();
+            nickname = tb_SearchNickName.Text.Trim();
+            GalleryType gallType = GalleryType.Normal;
+            if (rb_NormalGallery.Checked)
+                gallType = GalleryType.Normal;
+            else if (rb_MinorGallery.Checked)
+                gallType = GalleryType.Minor;
+
+            isSearching = true;
+
+            loadingThread = new Thread(new ThreadStart(delegate ()
+            {
+                int delay = 50;
+                int pos = 0;
+                int page = 1;
+                bool cont = false;
+                List<SearchedArticleInfo> newSearchedList;
+
+                while (pos != -1)
+                {
+                    try
+                    {
+                        newSearchedList = conn.SearchArticles(gall_id, gallType, nickname, ref pos, ref page, out cont);
+                    }
+                    catch (ThreadAbortException)
+                    {
+                        SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
+                        isSearching = false;
+
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        SetStatusMessage(ex.Message);
+                        isSearching = false;
+
+                        return;
+                    }
+
+                    searchedList.AddRange(newSearchedList);
+
+                    this.Invoke(new Action(() =>
+                    {
+                        LoadSearchedList(newSearchedList);
+                    }));
+
+                    Thread.Sleep(delay);
+                }
+
+                this.Invoke(new Action(() =>
+                {
+                    SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
+                    isSearching = false;
+                }));
+            }));
+
+            SetStatusMessage("글 목록을 검색하는 중입니다...");
+
+            loadingThread.Start();
+        }
+
+        private void btn_AbortSearch_Click(object sender, EventArgs e)
+        {
+            if (loadingThread == null || !loadingThread.IsAlive)
+            {
+                return;
+            }
+
+            if (isSearching == false)
+                return;
+
+            SetStatusMessage("검색을 중단하는 중입니다...");
+
+            loadingThread.Abort();
+        }
+
+        private void LoadSearchedList(List<SearchedArticleInfo> searchedList)
+        {
+            foreach (SearchedArticleInfo info in searchedList)
+            {
+                dgv_SearchArticle.Rows.Add(info.Title, info.Date);
+            }
+
+            string loadedCnt = dgv_SearchArticle.Rows.Count.ToString();
+            gb_SearchedArticleList.Text = "검색된 글 [" + loadedCnt + "]";
+        }
+
+        private void btn_DeleteSearchedArticle_Click(object sender, EventArgs e)
+        {
+            if (searchedList == null || searchedList.Count == 0)
+                return;
+
+            if (loadingThread != null && loadingThread.IsAlive)
+            {
+                return;
+            }
+
+            if(!conn.IsLogin)
+            {
+                if(string.IsNullOrWhiteSpace(tb_DeletePassword.Text))
+                {
+                    tb_DeletePassword.Focus();
+                    SetStatusMessage("삭제할 비밀번호를 입력해주세요.");
+                    return;
+                }
+            }
+
+            string password = tb_DeletePassword.Text.Trim();
+            GalleryType gallType = GalleryType.Normal;
+            if (rb_NormalGallery.Checked)
+                gallType = GalleryType.Normal;
+            else if (rb_MinorGallery.Checked)
+                gallType = GalleryType.Minor;
+
+            loadingThread = new Thread(new ThreadStart(delegate ()
+            {
+                int rmIdx = 0;  // 삭제 인덱스. 0부터 위로
+                int delCnt = searchedList.Count;
+
+                for (int i = 0; i < delCnt; i++)
+                {
+                    SearchedArticleInfo info = searchedList[rmIdx];
+                    ArticleInfo res = null;
+                    try
+                    {
+                        if (!conn.IsLogin)
+                            res = conn.DeleteArticle(info, info.Gallery, null, info.ArticleID, password, gallType, false);
+                        else
+                            res = conn.DeleteArticle(info, info.Gallery, null, info.ArticleID, null, gallType, false);
+                    }
+                    catch (ThreadAbortException)
+                    {
+                        return;
+                    }
+                    catch
+                    {
+                        // 삭제 못한 글은 무시
+                        rmIdx++;
+                        continue;
+                    }
+
+                    if (!res.ActualDelete)
+                        for (int j = 0; j < 1; j++)
+                        {
+                            // 실패시, Sleep 후 1회 재시도
+                            Thread.Sleep(100);
+                            if (!conn.IsLogin)
+                                res = conn.DeleteArticle(info, info.Gallery, null, info.ArticleID, password, gallType, false);
+                            else
+                                res = conn.DeleteArticle(info, info.Gallery, null, info.ArticleID, null, gallType, false);
+                            if (res.ActualDelete)
+                                break;
+                        }
+
+                    // 재시도에도 삭제 실패했을 경우,
+                    if (!res.ActualDelete)
+                    {
+                        rmIdx++;
+                        continue;   // 무시
+                    }
+
+                    info.ActualDelete = res.ActualDelete;
+                    info.GallogDelete = res.GallogDelete;
+                    info.DeleteMessage = res.DeleteMessage;
+
+                    searchedList[rmIdx] = info;
+
+                    searchedList.RemoveAt(rmIdx);
+                    this.Invoke(new Action(() =>
+                    {
+                        dgv_SearchArticle.Rows.RemoveAt(rmIdx);
+                        gb_SearchedArticleList.Text = "검색된 글 [" + searchedList.Count.ToString() + "]";
+                    }));
+
+                    Thread.Sleep(50);
+                }
+                
+                SetStatusMessage("검색된 글 삭제 완료");
+            }));
+            
+            SetStatusMessage("검색된 글 삭제중...");
+
+            loadingThread.Start();
+        }
+
+        private void dgv_SearchArticle_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left)
+            {
+                return;
+            }
+
+            int currentMouseOverRow = dgv_SearchArticle.HitTest(e.X, e.Y).RowIndex;
+
+            if (currentMouseOverRow >= 0)
+            {
+                dgv_SearchArticle.ClearSelection();
+
+                dgv_SearchArticle.Rows[currentMouseOverRow].Selected = true;
+            }
+
+            if (dgv_SearchArticle.SelectedRows == null)
+                return;
+
+            int selectedIdx = dgv_SearchArticle.SelectedRows[0].Index;
+            SearchedArticleInfo target = searchedList[selectedIdx];
+
+            string msg = "상태 : " + (target.ActualDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
+                       + "메시지 : " + (target.DeleteMessage);
+
+            MessageBox.Show(msg, "글 삭제 정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void dgv_SearchArticle_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+            {
+                return;
+            }
+
+            ContextMenu m = new ContextMenu();
+            m.MenuItems.Add("삭제(&R)").Click += menu_DeleteSearchedArticle_Clicked;
+
+            int currentMouseOverRow = dgv_SearchArticle.HitTest(e.X, e.Y).RowIndex;
+
+            if (currentMouseOverRow >= 0)
+            {
+                dgv_SearchArticle.ClearSelection();
+
+                dgv_SearchArticle.Rows[currentMouseOverRow].Selected = true;
+
+                m.Show(dgv_SearchArticle, new Point(e.X, e.Y));
+            }
+        }
+
+        private void menu_DeleteSearchedArticle_Clicked(object sender, EventArgs e)
+        {
+            if (dgv_SearchArticle.SelectedRows == null)
+                return;
+
+            int selectedIdx = dgv_SearchArticle.SelectedRows[0].Index;
+            SearchedArticleInfo target = searchedList[selectedIdx];
+
+            if (loadingThread != null && loadingThread.IsAlive)
+            {
+                return;
+            }
+
+            if (!conn.IsLogin)
+            {
+                if (string.IsNullOrWhiteSpace(tb_DeletePassword.Text))
+                {
+                    tb_DeletePassword.Focus();
+                    SetStatusMessage("삭제할 비밀번호를 입력해주세요.");
+                    return;
+                }
+            }
+
+            string password = tb_DeletePassword.Text.Trim();
+            GalleryType gallType = GalleryType.Normal;
+            if (rb_NormalGallery.Checked)
+                gallType = GalleryType.Normal;
+            else if (rb_MinorGallery.Checked)
+                gallType = GalleryType.Minor;
+
+
+            loadingThread = new Thread(new ThreadStart(delegate ()
+            {
+                try
+                {
+                    if(!conn.IsLogin)
+                        conn.DeleteArticle(target, target.Gallery, null, target.ArticleID, password, gallType, false);
+                    else
+                        conn.DeleteArticle(target, target.Gallery, null, target.ArticleID, "", gallType, false);
+                }
+                catch
+                {
+                    return;
+                }
+
+                // 갤로그와 갤러리 둘다 삭제 되었을 경우
+                if (target.ActualDelete)
+                {
+                    searchedList.RemoveAt(selectedIdx);
+
+                    this.Invoke(new Action(() =>
+                    {
+                        dgv_SearchArticle.Rows.RemoveAt(selectedIdx);
+                        gb_SearchedArticleList.Text = "검색된 글 [" + searchedList.Count.ToString() + "]";
+                        SetStatusMessage("글을 삭제하였습니다.");
+                    }));
+                }
+                else
+                {
+                    string rmErrMsg = "";
+                    if (!target.ActualDelete)
+                        rmErrMsg = "글을 삭제하는데 실패하였습니다.";
+
+                    SetStatusMessage(rmErrMsg);
+                }
+            }));
+
+            SetStatusMessage("글을 삭제하는 중입니다...");
+
+            loadingThread.Start();
+        }
+
+        /// <summary>
+        /// 상태바의 메시지를 설정하는 함수
+        /// </summary>
+        /// <param name="msg">설정할 메시지</param>
+        private void SetStatusMessage(string msg)
+        {
+            try
+            {
+                this.Invoke(new Action(() =>
+                {
+                    lbl_Status.Text = msg;
+                }));
+            }
+            catch { return; }
         }
     }
 }

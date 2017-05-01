@@ -67,6 +67,42 @@ namespace DCAdapter
             dcc_key = dcckeyNode.Attributes["value"].Value;
         }
 
+        internal static void GetDeleteFlowArticleParameters(string html, out string dcc_key, out string cur_t, out string randomName, out string randomKey)
+        {
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+
+            dcc_key = "";
+            cur_t = "";
+            randomName = "";
+            randomKey = "";
+
+            HtmlNode deleteNode = doc.GetElementbyId("password_confirm");
+
+            if (deleteNode == null)
+            {
+                if (html.Contains("/error/deleted"))
+                {
+                    throw new Exception("이미 삭제된 글입니다.");
+                }
+                else
+                {
+                    throw new Exception("알 수 없는 오류입니다.");
+                }
+            }
+
+            HtmlNode dcckeyNode = deleteNode.ParentNode.SelectSingleNode(".//input[@id='dcc_key']");
+            dcc_key = dcckeyNode.Attributes["value"].Value;
+
+            HtmlNode curtNode = deleteNode.ParentNode.SelectSingleNode(".//input[@id='cur_t']");
+            cur_t = curtNode.Attributes["value"].Value;
+
+            int inputCnt = deleteNode.ParentNode.Descendants("input").Count();
+            HtmlNode randomKeyNode = curtNode.NextSibling;
+            randomName = randomKeyNode.Attributes["name"].Value;
+            randomKey = randomKeyNode.Attributes["value"].Value;
+        }
+
         internal static void GetDeleteCommentParameters(string pageHtml, out string check7)
         {
             HtmlDocument doc = new HtmlDocument();
@@ -149,7 +185,7 @@ namespace DCAdapter
                 if (node.Attributes["onClick"] != null)
                 {
                     string title = node.ParentNode.PreviousSibling.PreviousSibling.PreviousSibling.PreviousSibling.InnerText;
-                    title = System.Web.HttpUtility.HtmlDecode(title).Trim();
+                    title = HttpUtility.HtmlDecode(title).Trim();
                     string url = Utility.GetAbsoulteURL(node.Attributes["onClick"].Value);
                     string date = node.ParentNode.InnerText;
 
@@ -204,6 +240,121 @@ namespace DCAdapter
             article_id = artNode.Attributes["value"].Value;
             comment_id = cNode.Attributes["value"].Value;
             logNo = logNode.Attributes["value"].Value;
+        }
+
+        internal static List<SearchedArticleInfo> GetSearchedArticleList(string searchedHtml, string gall_id, string searchNick, GalleryType gallType, bool isFixed, ref int searchPos, out int maxPage)
+        {
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(searchedHtml);
+
+            maxPage = 0;
+
+            List<SearchedArticleInfo> searchedList = new List<SearchedArticleInfo>();
+
+            string baseUrl = "http://gall.dcinside.com/";
+
+            HtmlNode pageList = doc.GetElementbyId("dgn_btn_paging");
+            if (pageList == null)
+                throw new Exception("알 수 없는 오류입니다.");
+
+            HtmlNode lastChild = pageList.Descendants("a").Last();
+
+            if (lastChild.InnerText != "다음검색")
+                searchPos = -1;
+            else
+            {
+                string src = lastChild.GetAttributeValue("href", "");
+                if(string.IsNullOrWhiteSpace(src))
+                {
+                    throw new Exception("알 수 없는 오류입니다.");
+                }
+
+                src = baseUrl + src.Substring(1);
+
+                Uri nextSearchUri = new Uri(src);
+                int.TryParse(HttpUtility.ParseQueryString(nextSearchUri.Query).Get("search_pos"), out searchPos);
+            }
+
+            HtmlNode lastPage = pageList.Descendants("span").Where(n => n.GetAttributeValue("class", "") == "arrow_2").FirstOrDefault();
+            if(lastPage == null)
+            {
+                if (lastChild.InnerText != "다음검색")
+                {
+                    int.TryParse(lastChild.InnerText, out maxPage);
+                }
+                else
+                {
+                    lastPage = lastChild.PreviousSibling;
+                    int.TryParse(lastPage.InnerText, out maxPage);
+                }
+            }
+            else
+            {
+                string src = lastPage.ParentNode.GetAttributeValue("href", "");
+                if (string.IsNullOrWhiteSpace(src))
+                {
+                    throw new Exception("알 수 없는 오류입니다.");
+                }
+                
+                src = baseUrl + src.Substring(1);
+
+                Uri maxPageUri = new Uri(src);
+                int.TryParse(HttpUtility.ParseQueryString(maxPageUri.Query).Get("page"), out maxPage);
+            }
+
+            string deleteBasePath = null;
+
+            if (gallType == GalleryType.Normal)
+                deleteBasePath = "http://gall.dcinside.com/mgallery/board/delete/?id=" + gall_id;
+            else if (gallType == GalleryType.Minor)
+                deleteBasePath = "http://gall.dcinside.com/board/delete/?id=" + gall_id;
+
+            if (deleteBasePath == null)
+                throw new Exception("예상치 못한 갤러리 형식입니다.");
+
+            foreach (HtmlNode article in doc.DocumentNode.Descendants("tr").Where(n => n.GetAttributeValue("class", "") == "tb"))
+            {
+                HtmlNode noticeNode = article.Descendants("td").Where(n => n.GetAttributeValue("class", "") == "t_notice").First();
+                if (noticeNode.InnerText == "공지")
+                    continue;
+
+                HtmlNode userNode = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_writer")).First();
+                string user_id = userNode.GetAttributeValue("user_id", "");
+                if (user_id == "" && isFixed)
+                    continue;
+                else if (user_id != "" && !isFixed)
+                    continue;
+
+                string nick = userNode.Descendants("span").First().InnerText;
+                if (nick != searchNick)
+                    continue;
+
+                HtmlNode subjectNode = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_subject")).First();
+
+                string title = subjectNode.InnerText;
+
+                string articleUrl = subjectNode.Descendants("a").First().GetAttributeValue("href", "");
+                if (string.IsNullOrWhiteSpace(articleUrl))
+                {
+                    throw new Exception("알 수 없는 오류입니다.");
+                }
+
+                articleUrl = baseUrl + articleUrl.Substring(1);
+
+                Uri subjectUri = new Uri(articleUrl);
+                string articleNo = HttpUtility.ParseQueryString(subjectUri.Query).Get("no");
+
+                SearchedArticleInfo info = new SearchedArticleInfo();
+                info.Date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
+                info.Title = title;
+                info.Gallery = gall_id;
+                info.ArticleID = articleNo;
+                info.DeleteURL = deleteBasePath + "&no=" + articleNo;
+
+                searchedList.Add(info);
+            }
+
+            return searchedList;
         }
 
         internal static void GetDeleteGallogCommentParameters(string pageHtml, out string gall_id, out string randomKey, out string randomVal)

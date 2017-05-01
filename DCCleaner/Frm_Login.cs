@@ -49,19 +49,16 @@ namespace DCCleaner
                 {
                     result = connector.LoginDCInside(id, pw);
                 }
+                catch(ThreadAbortException)
+                {
+                    return;
+                }
                 catch
                 {
-                    try
+                    this.Invoke(new Action(() =>
                     {
-                        this.Invoke(new Action(() =>
-                        {
-                            this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
-                        }));
-                    }
-                    catch
-                    {
-                        return;
-                    }
+                        this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
+                    }));
 
                     return;
                 }
@@ -85,6 +82,14 @@ namespace DCCleaner
             this.lbl_Error.Text = "로그인중입니다.";
 
             loginThread.Start();
+        }
+
+        private void btn_NoAccn_Click(object sender, EventArgs e)
+        {
+            Frm_Cleaner cleaner = new Frm_Cleaner(this.connector);
+            cleaner.FormClosed += (s, argv) => this.Close();
+            this.Hide();
+            cleaner.Show();
         }
 
         private void tb_PW_KeyPress(object sender, KeyPressEventArgs e)
