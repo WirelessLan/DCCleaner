@@ -15,7 +15,8 @@ namespace DCCleaner
         List<SearchedArticleInfo> searchedList = null;
         bool isSearching = false;
         Thread loadingThread = null;
-        
+        object lockObject = new object();
+
         public Frm_Cleaner(DCConnector _conn)
         {
             InitializeComponent();
@@ -618,7 +619,10 @@ namespace DCCleaner
             else if (rb_MinorGallery.Checked)
                 gallType = GalleryType.Minor;
 
-            isSearching = true;
+            lock (lockObject)
+            {
+                isSearching = true;
+            }
 
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
@@ -636,15 +640,21 @@ namespace DCCleaner
                     }
                     catch (ThreadAbortException)
                     {
-                        SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
-                        isSearching = false;
+                        lock (lockObject)
+                        {
+                            isSearching = false;
+                            SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
+                        }
 
                         return;
                     }
                     catch (Exception ex)
                     {
-                        SetStatusMessage(ex.Message);
-                        isSearching = false;
+                        lock (lockObject)
+                        {
+                            isSearching = false;
+                            SetStatusMessage(ex.Message);
+                        }
 
                         return;
                     }
@@ -661,8 +671,11 @@ namespace DCCleaner
 
                 this.Invoke(new Action(() =>
                 {
-                    SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
-                    isSearching = false;
+                    lock (lockObject)
+                    {
+                        isSearching = false;
+                        SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
+                    }
                 }));
             }));
 
@@ -678,8 +691,11 @@ namespace DCCleaner
                 return;
             }
 
-            if (isSearching == false)
-                return;
+            lock (lockObject)
+            {
+                if (isSearching == false)
+                    return;
+            }
 
             SetStatusMessage("검색을 중단하는 중입니다...");
 

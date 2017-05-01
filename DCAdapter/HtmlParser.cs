@@ -346,7 +346,7 @@ namespace DCAdapter
 
                 SearchedArticleInfo info = new SearchedArticleInfo();
                 info.Date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
-                info.Title = title;
+                info.Title = HttpUtility.HtmlDecode(title);
                 info.Gallery = gall_id;
                 info.ArticleID = articleNo;
                 info.DeleteURL = deleteBasePath + "&no=" + articleNo;
