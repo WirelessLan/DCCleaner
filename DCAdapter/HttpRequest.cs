@@ -411,11 +411,70 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            if (result.StartsWith("true||" + gallId))
+                            if (result.StartsWith("true||"))
+                            {
+                                if (gallType == GalleryType.Normal)
+                                    return new DeleteResult(true, "");
+                                else
+                                    return RequestDeleteMinorFlowArticle(ci_t, gallId, no, result.Replace("true||", ""), ref cookies);
+                            }
+                            else if (result == "false||비밀번호 인증에 실패하였습니다. 다시 시도해주세요" || 
+                                result == "false|| 비밀번호가 맞지 않습니다. 다시 시도해주세요" ||
+                                result == "false||비밀번호가 잘못되었습니다. 다시 시도해주세요")
+                            {
+                                return new DeleteResult(false, "비밀번호가 다릅니다.");
+                            }
+                            else
+                            {
+                                return new DeleteResult(false, "알 수 없는 오류입니다.");
+                            }
+                        }
+                    }
+                }
+            }
+
+            return new DeleteResult(false, "알 수 없는 오류입니다.");
+        }
+
+        private static DeleteResult RequestDeleteMinorFlowArticle(string ci_t, string gall_id, string no, string key, ref CookieContainer cookies)
+        {
+            string _reqURL = "http://gall.dcinside.com/mgallery/forms/delete_submit";
+            string referer = "http://gall.dcinside.com/mgallery/board/delete/?id=" + gall_id + "&no=" + no + "&key=" + key;
+
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
+
+            req.Method = "POST";
+            req.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
+            req.CookieContainer = cookies;
+            req.Proxy = null;
+            req.Referer = referer;
+            req.UserAgent = UserAgent;
+            req.Headers.Add("X-Requested-With", "XMLHttpRequest");
+
+            using (StreamWriter writer = new StreamWriter(req.GetRequestStream()))
+            {
+                string reqData = null;
+                
+                reqData = "ci_t=" + ci_t + "&id=" + gall_id + "&no=" + no + "&key=" + key;
+
+                writer.Write(reqData);
+            }
+
+            using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
+            {
+                if (res.StatusCode == HttpStatusCode.OK)
+                {
+                    using (Stream stream = res.GetResponseStream())
+                    {
+                        using (StreamReader reader = new StreamReader(stream))
+                        {
+                            string result = reader.ReadToEnd();
+
+                            if (result.StartsWith("true||"))
                             {
                                 return new DeleteResult(true, "");
                             }
-                            else if (result == "false||비밀번호 인증에 실패하였습니다. 다시 시도해주세요" || 
+                            else if (result == "false||비밀번호 인증에 실패하였습니다. 다시 시도해주세요" ||
                                 result == "false|| 비밀번호가 맞지 않습니다. 다시 시도해주세요" ||
                                 result == "false||비밀번호가 잘못되었습니다. 다시 시도해주세요")
                             {
