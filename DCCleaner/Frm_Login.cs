@@ -49,10 +49,7 @@ namespace DCCleaner
                 {
                     result = connector.LoginDCInside(id, pw);
                 }
-                catch(ThreadAbortException)
-                {
-                    return;
-                }
+                catch(ThreadAbortException) { throw; }
                 catch
                 {
                     this.Invoke(new Action(() =>
@@ -74,7 +71,7 @@ namespace DCCleaner
                     }
                     else
                     {
-                        lbl_Error.Text = connector.ErrorMessage;
+                        lbl_Error.Text = connector.LoginErrorMessage;
                     }
                 }));
             }));

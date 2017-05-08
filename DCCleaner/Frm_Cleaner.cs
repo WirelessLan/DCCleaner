@@ -50,10 +50,7 @@ namespace DCCleaner
                 {
                     articleList = conn.LoadGallogArticles();
                 }
-                catch (ThreadAbortException)
-                {
-                    return;
-                }
+                catch (ThreadAbortException) { throw; }
                 catch (Exception ex)
                 {
                     SetStatusMessage(ex.Message);
@@ -91,10 +88,7 @@ namespace DCCleaner
                 {
                     commentList = conn.LoadGallogComments();
                 }
-                catch (ThreadAbortException)
-                {
-                    return;
-                }
+                catch (ThreadAbortException) { throw; }
                 catch (Exception ex)
                 {
                     SetStatusMessage(ex.Message);
@@ -157,10 +151,7 @@ namespace DCCleaner
                     {
                         res = conn.DeleteArticle(info, both);
                     }
-                    catch (ThreadAbortException)
-                    {
-                        return;
-                    }
+                    catch (ThreadAbortException) { throw; }
                     catch
                     {
                         // 삭제 못한 글은 무시
@@ -254,10 +245,7 @@ namespace DCCleaner
                     {
                         res = conn.DeleteComment(info, both);
                     }
-                    catch (ThreadAbortException)
-                    {
-                        return;
-                    }
+                    catch (ThreadAbortException) { throw; }
                     catch
                     {
                         // 삭제 못한 리플은 무시
@@ -350,7 +338,7 @@ namespace DCCleaner
 
         private void menu_DeleteArticle_Clicked(object sender, EventArgs e)
         {
-            if (dgv_ArticleList.SelectedRows == null)
+            if (dgv_ArticleList.SelectedRows == null || dgv_ArticleList.SelectedRows.Count == 0)
                 return;
 
             int selectedIdx = dgv_ArticleList.SelectedRows[0].Index;
@@ -428,7 +416,7 @@ namespace DCCleaner
 
         private void menu_DeleteComment_Clicked(object sender, EventArgs e)
         {
-            if (dgv_CommentList.SelectedRows == null)
+            if (dgv_CommentList.SelectedRows == null || dgv_CommentList.SelectedRows.Count == 0)
                 return;
 
             int selectedIdx = dgv_CommentList.SelectedRows[0].Index;
@@ -498,7 +486,7 @@ namespace DCCleaner
                 dgv_ArticleList.Rows[currentMouseOverRow].Selected = true;
             }
 
-            if (dgv_ArticleList.SelectedRows == null)
+            if (dgv_ArticleList.SelectedRows == null || dgv_ArticleList.SelectedRows.Count == 0)
                 return;
 
             int selectedIdx = dgv_ArticleList.SelectedRows[0].Index;
@@ -527,7 +515,7 @@ namespace DCCleaner
                 dgv_CommentList.Rows[currentMouseOverRow].Selected = true;
             }
 
-            if (dgv_CommentList.SelectedRows == null)
+            if (dgv_CommentList.SelectedRows == null || dgv_CommentList.SelectedRows.Count == 0)
                 return;
 
             int selectedIdx = dgv_CommentList.SelectedRows[0].Index;
@@ -619,11 +607,6 @@ namespace DCCleaner
             else if (rb_MinorGallery.Checked)
                 gallType = GalleryType.Minor;
 
-            lock (lockObject)
-            {
-                isSearching = true;
-            }
-
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
                 int delay = 50;
@@ -632,22 +615,18 @@ namespace DCCleaner
                 bool cont = false;
                 List<SearchedArticleInfo> newSearchedList;
 
+                lock (lockObject)
+                {
+                    isSearching = true;
+                }
+
                 while (pos != -1)
                 {
                     try
                     {
                         newSearchedList = conn.SearchArticles(gall_id, gallType, nickname, ref pos, ref page, out cont);
                     }
-                    catch (ThreadAbortException)
-                    {
-                        lock (lockObject)
-                        {
-                            isSearching = false;
-                            SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
-                        }
-
-                        return;
-                    }
+                    catch (ThreadAbortException) { throw; }
                     catch (Exception ex)
                     {
                         lock (lockObject)
@@ -695,11 +674,15 @@ namespace DCCleaner
             {
                 if (isSearching == false)
                     return;
+
+                SetStatusMessage("검색을 중단하는 중입니다...");
+
+                loadingThread.Abort();
+
+                isSearching = false;
+
+                SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
             }
-
-            SetStatusMessage("검색을 중단하는 중입니다...");
-
-            loadingThread.Abort();
         }
 
         private void LoadSearchedList(List<SearchedArticleInfo> searchedList)
@@ -756,10 +739,7 @@ namespace DCCleaner
                         else
                             res = conn.DeleteArticle(info, info.Gallery, null, info.ArticleID, null, gallType, false);
                     }
-                    catch (ThreadAbortException)
-                    {
-                        return;
-                    }
+                    catch (ThreadAbortException) { throw; }
                     catch
                     {
                         // 삭제 못한 글은 무시
@@ -827,7 +807,7 @@ namespace DCCleaner
                 dgv_SearchArticle.Rows[currentMouseOverRow].Selected = true;
             }
 
-            if (dgv_SearchArticle.SelectedRows == null)
+            if (dgv_SearchArticle.SelectedRows == null || dgv_SearchArticle.SelectedRows.Count == 0)
                 return;
 
             int selectedIdx = dgv_SearchArticle.SelectedRows[0].Index;
@@ -863,7 +843,7 @@ namespace DCCleaner
 
         private void menu_DeleteSearchedArticle_Clicked(object sender, EventArgs e)
         {
-            if (dgv_SearchArticle.SelectedRows == null)
+            if (dgv_SearchArticle.SelectedRows == null || dgv_SearchArticle.SelectedRows.Count == 0)
                 return;
 
             int selectedIdx = dgv_SearchArticle.SelectedRows[0].Index;

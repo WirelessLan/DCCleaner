@@ -30,7 +30,7 @@ namespace DCAdapter
         /// <summary>
         /// 로그인시 에러 메시지를 나타냅니다.
         /// </summary>
-        public string ErrorMessage
+        public string LoginErrorMessage
         {
             get
             {
@@ -121,6 +121,7 @@ namespace DCAdapter
                 // 갤로그의 HTML 소스를 요청
                 html = HttpRequest.RequestGallogHtml(this.user_id, ref cookies);
             }
+            catch (ThreadAbortException) { throw; }
             catch
             {
                 return null;
@@ -179,6 +180,7 @@ namespace DCAdapter
             {
                 html = HttpRequest.RequestGallogHtml(this.user_id, ref cookies);
             }
+            catch (ThreadAbortException) { throw; }
             catch
             {
                 return null;
@@ -253,6 +255,7 @@ namespace DCAdapter
                 {
                     searchHtml = HttpRequest.RequestGalleryNickNameSearchPage(gall_id, gallType, nickname, ref searchPos, ref searchPage, ref cookies);
                 }
+                catch(ThreadAbortException) { throw; }
                 catch(Exception ex)
                 {
                     if(ex.Message == "해당 갤러리는 존재하지 않습니다.")
@@ -260,21 +263,27 @@ namespace DCAdapter
                         throw new Exception(ex.Message);
                     }
 
+                    searchHtml = null;
+
                     for (int j = 0; j < 3; j++)
                     {
                         try
                         {
                             Thread.Sleep(200);
                             searchHtml = HttpRequest.RequestGalleryNickNameSearchPage(gall_id, gallType, nickname, ref searchPos, ref searchPage, ref cookies);
+
+                            if (searchHtml != null)
+                                break;
                         }
+                        catch(ThreadAbortException) { throw; }
                         catch
                         {
                             continue;
                         }
-                        
-                        if (searchHtml == null)
-                            throw new Exception("글을 검색하는데 실패하였습니다.");
                     }
+
+                    if (string.IsNullOrWhiteSpace(searchHtml))
+                        throw new Exception("글을 검색하는데 실패하였습니다.");
                 }
 
                 int tmpPos = searchPos;
@@ -314,6 +323,7 @@ namespace DCAdapter
             {
                 this.GetDeleteArticleInfo(info.DeleteURL, out gall_id, out gall_no, out article_id, out logNo);
             }
+            catch(ThreadAbortException) { throw; }
             catch(Exception e)
             {
                 info.ActualDelete = false;
@@ -341,6 +351,7 @@ namespace DCAdapter
                 else
                     res1 = HttpRequest.RequestDeleteFlowArticle(gall_id, article_id, logNo, gallType, delay, ref cookies);   // logNo를 패스워드로 사용
             }
+            catch (ThreadAbortException) { throw; }
             catch (Exception ex)
             {
                 info.ActualDelete = false;
@@ -369,6 +380,7 @@ namespace DCAdapter
                 {
                     res2 = HttpRequest.RequestDeleteGallogArticle(user_id, gall_id, gall_no, article_id, logNo, delay, ref cookies);
                 }
+                catch (ThreadAbortException) { throw; }
                 catch (Exception ex)
                 {
                     info.ActualDelete = true;
@@ -404,6 +416,7 @@ namespace DCAdapter
             {
                 this.GetDeleteCommentInfo(info.DeleteURL, out gall_id, out gall_no, out article_id, out comment_id, out logNo);
             }
+            catch (ThreadAbortException) { throw; }
             catch (Exception e)
             {
                 info.ActualDelete = false;
@@ -429,6 +442,7 @@ namespace DCAdapter
             {
                 res1 = HttpRequest.RequestDeleteComment(gall_id, article_id, comment_id, ref cookies);
             }
+            catch (ThreadAbortException) { throw; }
             catch (Exception ex)
             {
                 info.ActualDelete = false;

@@ -190,8 +190,7 @@ namespace DCAdapter
 
             if (searchPath == null)
                 throw new Exception("예상치 못한 갤러리 형식입니다.");
-
-            //"&page=1&search_pos=-775351&s_type=search_all&s_keyword=%E3%85%81%E3%85%87"
+            
             searchPath += "&page=" + searchPage.ToString();
 
             if (searchPos != 0)
