@@ -4,6 +4,7 @@ using System.Net;
 using System.Web;
 using System.Text;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace DCAdapter
 {
@@ -245,12 +246,13 @@ namespace DCAdapter
         internal static DeleteResult RequestDeleteArticle(string gallId, string no, GalleryType gallType, int delay, ref CookieContainer cookies)
         {
             string pageHtml = RequestDeleteAritclePage(gallId, no, gallType, ref cookies);
-            string ci_t = null, dcc_key = null;
+            string ci_t = null;
+            Dictionary<string, string> delete_params = null;
 
             try
             {
                 if(gallType == GalleryType.Normal)
-                    HtmlParser.GetDeleteArticleParameters(pageHtml, out dcc_key);
+                    HtmlParser.GetDeleteArticleParameters(pageHtml, out delete_params);
                 ci_t = cookies.GetCookies(new Uri("http://gall.dcinside.com/"))["ci_c"].Value;
             }
             catch(Exception e)
@@ -293,7 +295,15 @@ namespace DCAdapter
             {
                 string reqData = null;
                 if(gallType == GalleryType.Normal)
-                    reqData = "ci_t=" + ci_t + "&id=" + gallId + "&no=" + no + "&key=&dcc_key=" + dcc_key;
+                {
+                    // 2017.05.11; 디시 삭제 방식 변경으로 인해 수정
+                    foreach(KeyValuePair<string, string> kv in delete_params)
+                    {
+                        reqData += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
+                    }
+                    reqData = reqData.Substring(0, reqData.Length - 1); // 마지막의 &을 제거
+                    //reqData = "ci_t=" + ci_t + "&id=" + gallId + "&no=" + no + "&key=&dcc_key=" + dcc_key;
+                }
                 else if (gallType == GalleryType.Minor)
                     reqData = "ci_t=" + ci_t + "&id=" + gallId + "&no=" + no + "&key=";
 
@@ -340,12 +350,13 @@ namespace DCAdapter
         internal static DeleteResult RequestDeleteFlowArticle(string gallId, string no, string password, GalleryType gallType, int delay, ref CookieContainer cookies)
         {
             string pageHtml = RequestDeleteAritclePage(gallId, no, gallType, ref cookies);
-            string ci_t = null, dcc_key = null, cur_t = null, ranName = null, ranKey = null;
+            string ci_t = null;
+            Dictionary<string, string> delete_params = null;
 
             try
             {
                 if(gallType == GalleryType.Normal)
-                    HtmlParser.GetDeleteFlowArticleParameters(pageHtml, out dcc_key, out cur_t, out ranName, out ranKey);
+                    HtmlParser.GetDeleteFlowArticleParameters(pageHtml, out delete_params);
                 ci_t = cookies.GetCookies(new Uri("http://gall.dcinside.com/"))["ci_c"].Value;
             }
             catch (Exception e)
@@ -388,10 +399,16 @@ namespace DCAdapter
             {
                 string reqData = null;
 
-                if(gallType == GalleryType.Normal)
-                    reqData = "ci_t=" + ci_t + "&id=" + gallId + "&no=" + no + "&dcc_key=" + dcc_key + "&cur_t=" + cur_t + "&" 
-                        + HttpUtility.UrlEncode(ranName) + "=" + HttpUtility.UrlEncode(ranKey) + "&password=" + password;
-                else if(gallType == GalleryType.Minor)
+                if (gallType == GalleryType.Normal)
+                {
+                    // 2017.05.11; 디시 삭제 방식 변경으로 인해 수정
+                    foreach (KeyValuePair<string, string> kv in delete_params)
+                    {
+                        reqData += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
+                    }
+                    reqData += "password=" + password;
+                }
+                else if (gallType == GalleryType.Minor)
                     reqData = "ci_t=" + ci_t + "&id=" + gallId + "&no=" + no + "&key=&password=" + password;
 
                 if (reqData == null)
@@ -469,7 +486,7 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            if (result.StartsWith("true||"))
+                            if (result.StartsWith("true||" + gall_id))
                             {
                                 return new DeleteResult(true, "");
                             }

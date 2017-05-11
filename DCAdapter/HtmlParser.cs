@@ -37,12 +37,12 @@ namespace DCAdapter
             return int.Parse(result);
         }
 
-        internal static void GetDeleteArticleParameters(string html, out string dcc_key)
+        internal static void GetDeleteArticleParameters(string html, out Dictionary<string, string> delete_Params)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
-            
-            dcc_key = "";
+
+            delete_Params = new Dictionary<string, string>();
 
             HtmlNode deleteNode = doc.GetElementbyId("delete");
 
@@ -62,20 +62,18 @@ namespace DCAdapter
                 }
             }
             
-            HtmlNode dcckeyNode = deleteNode.ParentNode.SelectSingleNode(".//input[@id='dcc_key']");
-
-            dcc_key = dcckeyNode.Attributes["value"].Value;
+            foreach(HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
+            {
+                delete_Params.Add(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
+            }
         }
 
-        internal static void GetDeleteFlowArticleParameters(string html, out string dcc_key, out string cur_t, out string randomName, out string randomKey)
+        internal static void GetDeleteFlowArticleParameters(string html, out Dictionary<string, string> delete_Params)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            dcc_key = "";
-            cur_t = "";
-            randomName = "";
-            randomKey = "";
+            delete_Params = new Dictionary<string, string>();
 
             HtmlNode deleteNode = doc.GetElementbyId("password_confirm");
 
@@ -91,16 +89,10 @@ namespace DCAdapter
                 }
             }
 
-            HtmlNode dcckeyNode = deleteNode.ParentNode.SelectSingleNode(".//input[@id='dcc_key']");
-            dcc_key = dcckeyNode.Attributes["value"].Value;
-
-            HtmlNode curtNode = deleteNode.ParentNode.SelectSingleNode(".//input[@id='cur_t']");
-            cur_t = curtNode.Attributes["value"].Value;
-
-            int inputCnt = deleteNode.ParentNode.Descendants("input").Count();
-            HtmlNode randomKeyNode = curtNode.NextSibling;
-            randomName = randomKeyNode.Attributes["name"].Value;
-            randomKey = randomKeyNode.Attributes["value"].Value;
+            foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
+            {
+                delete_Params.Add(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
+            }
         }
 
         internal static void GetDeleteCommentParameters(string pageHtml, out string check7)
