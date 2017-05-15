@@ -44,7 +44,7 @@ namespace DCAdapter
 
             delete_Params = new Dictionary<string, string>();
 
-            HtmlNode deleteNode = doc.GetElementbyId("delete");
+            HtmlNode deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
 
             if(deleteNode == null)
             {
@@ -75,7 +75,7 @@ namespace DCAdapter
 
             delete_Params = new Dictionary<string, string>();
 
-            HtmlNode deleteNode = doc.GetElementbyId("password_confirm");
+            HtmlNode deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
 
             if (deleteNode == null)
             {

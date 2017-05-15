@@ -245,15 +245,12 @@ namespace DCAdapter
         /// <returns>삭제 결과를 반환</returns>
         internal static DeleteResult RequestDeleteArticle(string gallId, string no, GalleryType gallType, int delay, ref CookieContainer cookies)
         {
-            string pageHtml = RequestDeleteAritclePage(gallId, no, gallType, ref cookies);
-            string ci_t = null;
+            string pageHtml = RequestDeleteAritclePage(gallId, no, null, gallType, ref cookies);
             Dictionary<string, string> delete_params = null;
 
             try
             {
-                if(gallType == GalleryType.Normal)
-                    HtmlParser.GetDeleteArticleParameters(pageHtml, out delete_params);
-                ci_t = cookies.GetCookies(new Uri("http://gall.dcinside.com/"))["ci_c"].Value;
+                HtmlParser.GetDeleteArticleParameters(pageHtml, out delete_params);
             }
             catch(Exception e)
             {
@@ -294,18 +291,12 @@ namespace DCAdapter
             using (StreamWriter writer = new StreamWriter(req.GetRequestStream()))
             {
                 string reqData = null;
-                if(gallType == GalleryType.Normal)
+
+                foreach (KeyValuePair<string, string> kv in delete_params)
                 {
-                    // 2017.05.11; 디시 삭제 방식 변경으로 인해 수정
-                    foreach(KeyValuePair<string, string> kv in delete_params)
-                    {
-                        reqData += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
-                    }
-                    reqData = reqData.Substring(0, reqData.Length - 1); // 마지막의 &을 제거
-                    //reqData = "ci_t=" + ci_t + "&id=" + gallId + "&no=" + no + "&key=&dcc_key=" + dcc_key;
+                    reqData += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
                 }
-                else if (gallType == GalleryType.Minor)
-                    reqData = "ci_t=" + ci_t + "&id=" + gallId + "&no=" + no + "&key=";
+                reqData = reqData.Substring(0, reqData.Length - 1);
 
                 if (reqData == null)
                     throw new Exception("예상치 못한 갤러리 형식입니다.");
@@ -349,15 +340,12 @@ namespace DCAdapter
         /// <returns>삭제 결과를 반환</returns>
         internal static DeleteResult RequestDeleteFlowArticle(string gallId, string no, string password, GalleryType gallType, int delay, ref CookieContainer cookies)
         {
-            string pageHtml = RequestDeleteAritclePage(gallId, no, gallType, ref cookies);
-            string ci_t = null;
+            string pageHtml = RequestDeleteAritclePage(gallId, no, null, gallType, ref cookies);
             Dictionary<string, string> delete_params = null;
 
             try
             {
-                if(gallType == GalleryType.Normal)
-                    HtmlParser.GetDeleteFlowArticleParameters(pageHtml, out delete_params);
-                ci_t = cookies.GetCookies(new Uri("http://gall.dcinside.com/"))["ci_c"].Value;
+                HtmlParser.GetDeleteFlowArticleParameters(pageHtml, out delete_params);
             }
             catch (Exception e)
             {
@@ -398,21 +386,12 @@ namespace DCAdapter
             using (StreamWriter writer = new StreamWriter(req.GetRequestStream()))
             {
                 string reqData = null;
-
-                if (gallType == GalleryType.Normal)
+                
+                foreach (KeyValuePair<string, string> kv in delete_params)
                 {
-                    // 2017.05.11; 디시 삭제 방식 변경으로 인해 수정
-                    foreach (KeyValuePair<string, string> kv in delete_params)
-                    {
-                        reqData += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
-                    }
-                    reqData += "password=" + password;
+                    reqData += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
                 }
-                else if (gallType == GalleryType.Minor)
-                    reqData = "ci_t=" + ci_t + "&id=" + gallId + "&no=" + no + "&key=&password=" + password;
-
-                if (reqData == null)
-                        throw new Exception("예상치 못한 갤러리 형식입니다.");
+                reqData += "password=" + password;
 
                 writer.Write(reqData);
             }
@@ -432,7 +411,7 @@ namespace DCAdapter
                                 if (gallType == GalleryType.Normal)
                                     return new DeleteResult(true, "");
                                 else
-                                    return RequestDeleteMinorFlowArticle(ci_t, gallId, no, result.Replace("true||", ""), ref cookies);
+                                    return RequestDeleteMinorFlowArticle(gallId, no, result.Replace("true||", ""), ref cookies);
                             }
                             else if (result == "false||비밀번호 인증에 실패하였습니다. 다시 시도해주세요" || 
                                 result == "false|| 비밀번호가 맞지 않습니다. 다시 시도해주세요" ||
@@ -452,8 +431,20 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
 
-        private static DeleteResult RequestDeleteMinorFlowArticle(string ci_t, string gall_id, string no, string key, ref CookieContainer cookies)
+        private static DeleteResult RequestDeleteMinorFlowArticle(string gall_id, string no, string key, ref CookieContainer cookies)
         {
+            string pageHtml = RequestDeleteAritclePage(gall_id, no, key, GalleryType.Minor, ref cookies);
+            Dictionary<string, string> delete_params = null;
+
+            try
+            {
+                HtmlParser.GetDeleteFlowArticleParameters(pageHtml, out delete_params);
+            }
+            catch (Exception e)
+            {
+                return new DeleteResult(false, e.Message);
+            }
+
             string _reqURL = "http://gall.dcinside.com/mgallery/forms/delete_submit";
             string referer = "http://gall.dcinside.com/mgallery/board/delete/?id=" + gall_id + "&no=" + no + "&key=" + key;
 
@@ -470,8 +461,12 @@ namespace DCAdapter
             using (StreamWriter writer = new StreamWriter(req.GetRequestStream()))
             {
                 string reqData = null;
-                
-                reqData = "ci_t=" + ci_t + "&id=" + gall_id + "&no=" + no + "&key=" + key;
+
+                foreach (KeyValuePair<string, string> kv in delete_params)
+                {
+                    reqData += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
+                }
+                reqData = reqData.Substring(0, reqData.Length - 1);
 
                 writer.Write(reqData);
             }
@@ -759,26 +754,31 @@ namespace DCAdapter
             throw new Exception("글을 불러올 수 없습니다.");
         }
 
-        private static string RequestDeleteAritclePage(string gallId, string no, GalleryType gallType, ref CookieContainer cookies)
+        private static string RequestDeleteAritclePage(string gallId, string no, string key, GalleryType gallType, ref CookieContainer cookies)
         {
             string _reqURL = null;
             string referer = null; 
 
             if(gallType == GalleryType.Normal)
             {
-                _reqURL = "http://gall.dcinside.com/board/delete/";
+                _reqURL = "http://gall.dcinside.com/board/delete/" + "?id=" + gallId + "&no=" + no;
                 referer = "http://gall.dcinside.com/board/view/?id=" + gallId + "&no=" + no;
             }
             else if(gallType == GalleryType.Minor)
             {
-                _reqURL = "http://gall.dcinside.com/mgallery/board/delete/";
+                _reqURL = "http://gall.dcinside.com/mgallery/board/delete/" + "?id=" + gallId + "&no=" + no;
                 referer = "http://gall.dcinside.com/mgallery/board/view/?id=" + gallId + "&no=" + no;
             }
 
             if (_reqURL == null || referer == null)
                 throw new Exception("예상치 못한 갤러리 형식입니다.");
 
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?id=" + gallId + "&no=" + no);
+            if(!string.IsNullOrWhiteSpace(key))
+            {
+                _reqURL += "&key=" + key;
+            }
+
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
             req.Method = "GET";
             req.UserAgent = UserAgent;
