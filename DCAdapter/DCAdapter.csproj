@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="JSParser.cs" />
     <Compile Include="SearchedArticleInfo.cs" />
     <Compile Include="ArticleInfo.cs" />
     <Compile Include="CommentInfo.cs" />

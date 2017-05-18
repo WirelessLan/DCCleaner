@@ -61,11 +61,27 @@ namespace DCAdapter
                     throw new Exception("알 수 없는 오류입니다."); 
                 }
             }
-            
-            foreach(HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
+
+            // 회원글인데 비밀번호 입력하는 페이지인 경우 이미 삭제된 글
+            if (deleteNode.Attributes["action"].Value.Contains("delete_password_submit"))
+            {
+                throw new Exception("이미 삭제된 글입니다.");
+            }
+
+            foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
             {
                 delete_Params.Add(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
             }
+
+            string jsParamName, jsParamValue;
+            string jsScript = doc.DocumentNode.Descendants("script").Where(n => n.Attributes.Count == 0).FirstOrDefault().InnerHtml;
+            if (jsScript == null)
+            {
+                throw new Exception("알 수 없는 오류입니다.");
+            }
+            JSParser.ParseAdditionalDeleteParameter(jsScript, out jsParamName, out jsParamValue);
+
+            delete_Params.Add(jsParamName, jsParamValue);
         }
 
         internal static void GetDeleteFlowArticleParameters(string html, out Dictionary<string, string> delete_Params)
@@ -93,6 +109,16 @@ namespace DCAdapter
             {
                 delete_Params.Add(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
             }
+
+            string jsParamName, jsParamValue;
+            string jsScript = doc.DocumentNode.Descendants("script").Where(n => n.Attributes.Count == 0).FirstOrDefault().InnerHtml;
+            if(jsScript == null)
+            {
+                throw new Exception("알 수 없는 오류입니다.");
+            }
+            JSParser.ParseAdditionalDeleteParameter(jsScript, out jsParamName, out jsParamValue);
+
+            delete_Params.Add(jsParamName, jsParamValue);
         }
 
         internal static void GetDeleteCommentParameters(string pageHtml, out string check7)
