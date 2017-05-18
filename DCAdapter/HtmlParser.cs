@@ -74,8 +74,14 @@ namespace DCAdapter
             }
 
             string jsParamName, jsParamValue;
-            string jsScript = doc.DocumentNode.Descendants("script").Where(n => n.Attributes.Count == 0).FirstOrDefault().InnerHtml;
-            if (jsScript == null)
+            string jsScript = "";
+
+            foreach(HtmlNode scriptNode in doc.DocumentNode.Descendants("script").Where(n => n.Attributes.Count == 0))
+            {
+                jsScript += scriptNode.InnerHtml;
+            }
+
+            if (jsScript == "")
             {
                 throw new Exception("알 수 없는 오류입니다.");
             }
@@ -111,8 +117,14 @@ namespace DCAdapter
             }
 
             string jsParamName, jsParamValue;
-            string jsScript = doc.DocumentNode.Descendants("script").Where(n => n.Attributes.Count == 0).FirstOrDefault().InnerHtml;
-            if(jsScript == null)
+            string jsScript = "";
+
+            foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script").Where(n => n.Attributes.Count == 0))
+            {
+                jsScript += scriptNode.InnerHtml;
+            }
+
+            if (jsScript == "")
             {
                 throw new Exception("알 수 없는 오류입니다.");
             }
