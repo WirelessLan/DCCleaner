@@ -44,7 +44,12 @@ namespace DCAdapter
 
             delete_Params = new Dictionary<string, string>();
 
-            HtmlNode deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
+            HtmlNode deleteNode = null;
+            try
+            {
+                deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
+            }
+            catch { }
 
             if(deleteNode == null)
             {
@@ -97,7 +102,13 @@ namespace DCAdapter
 
             delete_Params = new Dictionary<string, string>();
 
-            HtmlNode deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
+            HtmlNode deleteNode = null;
+
+            try
+            {
+                deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
+            }
+            catch { }
 
             if (deleteNode == null)
             {
