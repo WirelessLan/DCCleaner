@@ -78,10 +78,10 @@ namespace DCAdapter
                 delete_Params.Add(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
             }
 
-            string jsParamName, jsParamValue;
+            string jsParamName, jsParamValue, jsEncCode;
             string jsScript = "";
 
-            foreach(HtmlNode scriptNode in doc.DocumentNode.Descendants("script").Where(n => n.Attributes.Count == 0))
+            foreach(HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
             {
                 jsScript += scriptNode.InnerHtml;
             }
@@ -90,9 +90,10 @@ namespace DCAdapter
             {
                 throw new Exception("알 수 없는 오류입니다.");
             }
-            JSParser.ParseAdditionalDeleteParameter(jsScript, out jsParamName, out jsParamValue);
+            JSParser.ParseAdditionalDeleteParameter(jsScript, out jsEncCode, out jsParamName, out jsParamValue);
 
             delete_Params.Add(jsParamName, jsParamValue);
+            delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
         }
 
         internal static void GetDeleteFlowArticleParameters(string html, out Dictionary<string, string> delete_Params)
@@ -127,7 +128,7 @@ namespace DCAdapter
                 delete_Params.Add(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
             }
 
-            string jsParamName, jsParamValue;
+            string jsParamName, jsParamValue, jsEncCode;
             string jsScript = "";
 
             foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script").Where(n => n.Attributes.Count == 0))
@@ -139,7 +140,7 @@ namespace DCAdapter
             {
                 throw new Exception("알 수 없는 오류입니다.");
             }
-            JSParser.ParseAdditionalDeleteParameter(jsScript, out jsParamName, out jsParamValue);
+            JSParser.ParseAdditionalDeleteParameter(jsScript, out jsEncCode, out jsParamName, out jsParamValue);
 
             delete_Params.Add(jsParamName, jsParamValue);
         }

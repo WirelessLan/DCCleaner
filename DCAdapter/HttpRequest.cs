@@ -5,6 +5,7 @@ using System.Web;
 using System.Text;
 using System.Threading;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace DCAdapter
 {
@@ -236,6 +237,35 @@ namespace DCAdapter
             throw new Exception("알 수 없는 오류입니다.");
         }
 
+        private static void RequestCommonJs(ref CookieContainer cookies)
+        {
+            string url = "http://gall.dcinside.com/_js/common.js?v=1706131457";
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+
+            req.Method = "GET";
+            req.CookieContainer = cookies;
+            req.Proxy = null;
+            req.UserAgent = UserAgent;
+
+            using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
+            {
+                if (res.StatusCode == HttpStatusCode.OK)
+                {
+                    using (Stream stream = res.GetResponseStream())
+                    {
+                        using (StreamReader reader = new StreamReader(stream))
+                        {
+                            string result = reader.ReadToEnd();
+
+                            return;
+                        }
+                    }
+                }
+            }
+
+            throw new Exception("알 수 없는 오류입니다.");
+        }
+
         /// <summary>
         /// 글 삭제를 요청하는 함수
         /// </summary>
@@ -247,6 +277,8 @@ namespace DCAdapter
         {
             string pageHtml = RequestDeleteAritclePage(gallId, no, null, gallType, ref cookies);
             Dictionary<string, string> delete_params = null;
+
+            RequestCommonJs(ref cookies);
 
             try
             {
@@ -294,7 +326,11 @@ namespace DCAdapter
 
                 foreach (KeyValuePair<string, string> kv in delete_params)
                 {
-                    reqData += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
+                    Regex reg = new Regex(@"%[a-f0-9]{2}");
+                    
+                    string header = reg.Replace(HttpUtility.UrlEncode(kv.Key), m => m.Value.ToUpperInvariant());
+                    string value = reg.Replace(HttpUtility.UrlEncode(kv.Value), m => m.Value.ToUpperInvariant());
+                    reqData += header + "=" + value + "&";
                 }
                 reqData = reqData.Substring(0, reqData.Length - 1);
 
