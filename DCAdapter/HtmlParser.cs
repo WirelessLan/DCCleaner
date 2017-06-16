@@ -37,7 +37,7 @@ namespace DCAdapter
             return int.Parse(result);
         }
 
-        internal static void GetDeleteArticleParameters(string html, out Dictionary<string, string> delete_Params, out string lately_gallery)
+        internal static void GetDeleteArticleParameters(string html, GalleryType gallType, out Dictionary<string, string> delete_Params, out string lately_gallery)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
@@ -92,13 +92,14 @@ namespace DCAdapter
             {
                 throw new Exception("알 수 없는 오류입니다.");
             }
-            JSParser.ParseAdditionalDeleteParameter(jsScript, out jsEncCode, out jsParamName, out jsParamValue);
+            JSParser.ParseAdditionalDeleteParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
 
             delete_Params.Add(jsParamName, jsParamValue);
-            delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
+            if(gallType == GalleryType.Normal)
+                delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
         }
 
-        internal static void GetDeleteFlowArticleParameters(string html, out Dictionary<string, string> delete_Params)
+        internal static void GetDeleteFlowArticleParameters(string html, GalleryType gallType, out Dictionary<string, string> delete_Params, out string lately_gallery)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
@@ -106,10 +107,13 @@ namespace DCAdapter
             delete_Params = new Dictionary<string, string>();
 
             HtmlNode deleteNode = null;
+            lately_gallery = null;
 
             try
             {
                 deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
+                if(gallType == GalleryType.Normal)
+                    lately_gallery = doc.GetElementbyId("lately_gallery").GetAttributeValue("value", "");
             }
             catch { }
 
@@ -133,7 +137,7 @@ namespace DCAdapter
             string jsParamName, jsParamValue, jsEncCode;
             string jsScript = "";
 
-            foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script").Where(n => n.Attributes.Count == 0))
+            foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
             {
                 jsScript += scriptNode.InnerHtml;
             }
@@ -142,9 +146,11 @@ namespace DCAdapter
             {
                 throw new Exception("알 수 없는 오류입니다.");
             }
-            JSParser.ParseAdditionalDeleteParameter(jsScript, out jsEncCode, out jsParamName, out jsParamValue);
+            JSParser.ParseAdditionalDeleteParameter(jsScript, gallType,  out jsEncCode, out jsParamName, out jsParamValue);
 
             delete_Params.Add(jsParamName, jsParamValue);
+            if (gallType == GalleryType.Normal)
+                delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
         }
 
         internal static void GetDeleteCommentParameters(string pageHtml, out string check7)

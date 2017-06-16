@@ -254,14 +254,15 @@ namespace DCAdapter
             
             try
             {
-                HtmlParser.GetDeleteArticleParameters(pageHtml, out delete_params, out lately_gallery);
+                HtmlParser.GetDeleteArticleParameters(pageHtml, gallType, out delete_params, out lately_gallery);
             }
             catch (Exception e)
             {
                 return new DeleteResult(false, e.Message);
             }
 
-            cookies.Add(new Cookie("lately_cookie", HttpUtility.UrlEncode(lately_gallery)) { Domain="dcinside.com" });
+            if(gallType == GalleryType.Normal)
+                cookies.Add(new Cookie("lately_cookie", HttpUtility.UrlEncode(lately_gallery)) { Domain="dcinside.com" });
 
             Thread.Sleep(delay);
 
@@ -357,15 +358,19 @@ namespace DCAdapter
         {
             string pageHtml = RequestDeleteAritclePage(gallId, no, null, gallType, ref cookies);
             Dictionary<string, string> delete_params = null;
+            string lately_gallery = null;
 
             try
             {
-                HtmlParser.GetDeleteFlowArticleParameters(pageHtml, out delete_params);
+                HtmlParser.GetDeleteFlowArticleParameters(pageHtml, gallType, out delete_params, out lately_gallery);
             }
             catch (Exception e)
             {
                 return new DeleteResult(false, e.Message);
             }
+            
+            if (gallType == GalleryType.Normal)
+                cookies.Add(new Cookie("lately_cookie", HttpUtility.UrlEncode(lately_gallery)) { Domain = "dcinside.com" });
 
             Thread.Sleep(delay);
 
@@ -458,10 +463,11 @@ namespace DCAdapter
         {
             string pageHtml = RequestDeleteAritclePage(gall_id, no, key, GalleryType.Minor, ref cookies);
             Dictionary<string, string> delete_params = null;
+            string nulString = null;
 
             try
             {
-                HtmlParser.GetDeleteFlowArticleParameters(pageHtml, out delete_params);
+                HtmlParser.GetDeleteFlowArticleParameters(pageHtml, GalleryType.Minor, out delete_params, out nulString);
             }
             catch (Exception e)
             {
