@@ -37,17 +37,19 @@ namespace DCAdapter
             return int.Parse(result);
         }
 
-        internal static void GetDeleteArticleParameters(string html, out Dictionary<string, string> delete_Params)
+        internal static void GetDeleteArticleParameters(string html, out Dictionary<string, string> delete_Params, out string lately_gallery)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
 
             delete_Params = new Dictionary<string, string>();
+            lately_gallery = null;
 
             HtmlNode deleteNode = null;
             try
             {
                 deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
+                lately_gallery = doc.GetElementbyId("lately_gallery").GetAttributeValue("value", "");
             }
             catch { }
 

@@ -237,57 +237,31 @@ namespace DCAdapter
             throw new Exception("알 수 없는 오류입니다.");
         }
 
-        private static void RequestCommonJs(ref CookieContainer cookies)
-        {
-            string url = "http://gall.dcinside.com/_js/common.js?v=1706131457";
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-
-            req.Method = "GET";
-            req.CookieContainer = cookies;
-            req.Proxy = null;
-            req.UserAgent = UserAgent;
-
-            using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
-            {
-                if (res.StatusCode == HttpStatusCode.OK)
-                {
-                    using (Stream stream = res.GetResponseStream())
-                    {
-                        using (StreamReader reader = new StreamReader(stream))
-                        {
-                            string result = reader.ReadToEnd();
-
-                            return;
-                        }
-                    }
-                }
-            }
-
-            throw new Exception("알 수 없는 오류입니다.");
-        }
-
         /// <summary>
-        /// 글 삭제를 요청하는 함수
+        /// 고정닉의 갤러리 글 삭제를 요청하는 함수
         /// </summary>
         /// <param name="gallId">갤러리 ID</param>
         /// <param name="no">글 번호</param>
-        /// <param name="cookies">쿠키</param>
-        /// <returns>삭제 결과를 반환</returns>
+        /// <param name="gallType">갤러리 구분</param>
+        /// <param name="delay">삭제 딜레이</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>갤러리 글 삭제 결과</returns>
         internal static DeleteResult RequestDeleteArticle(string gallId, string no, GalleryType gallType, int delay, ref CookieContainer cookies)
         {
             string pageHtml = RequestDeleteAritclePage(gallId, no, null, gallType, ref cookies);
             Dictionary<string, string> delete_params = null;
-
-            RequestCommonJs(ref cookies);
-
+            string lately_gallery = null;
+            
             try
             {
-                HtmlParser.GetDeleteArticleParameters(pageHtml, out delete_params);
+                HtmlParser.GetDeleteArticleParameters(pageHtml, out delete_params, out lately_gallery);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 return new DeleteResult(false, e.Message);
             }
+
+            cookies.Add(new Cookie("lately_cookie", HttpUtility.UrlEncode(lately_gallery)) { Domain="dcinside.com" });
 
             Thread.Sleep(delay);
 
@@ -326,10 +300,9 @@ namespace DCAdapter
 
                 foreach (KeyValuePair<string, string> kv in delete_params)
                 {
-                    Regex reg = new Regex(@"%[a-f0-9]{2}");
-                    
-                    string header = reg.Replace(HttpUtility.UrlEncode(kv.Key), m => m.Value.ToUpperInvariant());
-                    string value = reg.Replace(HttpUtility.UrlEncode(kv.Value), m => m.Value.ToUpperInvariant());
+                    string header = HttpUtility.UrlEncode(kv.Key);
+                    string value = HttpUtility.UrlEncode(kv.Value);
+
                     reqData += header + "=" + value + "&";
                 }
                 reqData = reqData.Substring(0, reqData.Length - 1);
@@ -354,6 +327,10 @@ namespace DCAdapter
                             {
                                 return new DeleteResult(true, "");
                             }
+                            else if(result.StartsWith("false||"))
+                            {
+                                return new DeleteResult(false, result.Replace("false||", ""));
+                            }
                             else
                             {
                                 return new DeleteResult(false, "알 수 없는 오류입니다.");
@@ -367,13 +344,15 @@ namespace DCAdapter
         }
 
         /// <summary>
-        /// 유동닉으로 작성한 글 삭제를 요청하는 함수
+        /// 유동닉의 갤러리 글 삭제를 요청하는 함수
         /// </summary>
         /// <param name="gallId">갤러리 ID</param>
         /// <param name="no">글 번호</param>
-        /// <param name="password">삭제 비밀번호</param>
-        /// <param name="cookies">쿠키</param>
-        /// <returns>삭제 결과를 반환</returns>
+        /// <param name="password">글 비밀번호</param>
+        /// <param name="gallType">갤러리 구분</param>
+        /// <param name="delay">삭제 딜레이</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>갤러리 글 삭제 결과</returns>
         internal static DeleteResult RequestDeleteFlowArticle(string gallId, string no, string password, GalleryType gallType, int delay, ref CookieContainer cookies)
         {
             string pageHtml = RequestDeleteAritclePage(gallId, no, null, gallType, ref cookies);
@@ -467,6 +446,14 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
 
+        /// <summary>
+        /// 유동닉의 갤러리 글 삭제를 요청하는 함수 (마이너 갤러리는 2번 요청이 필요함)
+        /// </summary>
+        /// <param name="gall_id">갤러리 ID</param>
+        /// <param name="no">글 번호</param>
+        /// <param name="key">삭제 키</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>갤러리 글 삭제 결과</returns>
         private static DeleteResult RequestDeleteMinorFlowArticle(string gall_id, string no, string key, ref CookieContainer cookies)
         {
             string pageHtml = RequestDeleteAritclePage(gall_id, no, key, GalleryType.Minor, ref cookies);
