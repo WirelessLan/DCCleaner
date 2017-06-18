@@ -14,16 +14,16 @@ namespace DCAdapter
         /// <summary>
         /// 서버와의 통신에 사용되는 Fake User-Agent
         /// </summary>
-        readonly static string UserAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36";
+        readonly static string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.86 Safari/537.36";
 
         /// <summary>
-        /// 로그인을 요청합니다.
+        /// 로그인을 요청하는 함수
         /// </summary>
         /// <param name="id">사용자의 ID</param>
         /// <param name="pw">사용자의 비밀번호</param>
-        /// <param name="status">(out) 로그인 상태를 가져옵니다</param>
-        /// <param name="cookies">(ref) 서버의 쿠키 정보를 저장하는 쿠키 컨테이너입니다.</param>
-        /// <returns>로그인 성공시 True, 실패시 False 반환</returns>
+        /// <param name="status">로그인 결과</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>로그인 성공 여부를 반환. 성공시 true, 실패시 false</returns>
         internal static bool RequestLogin(string id, string pw, out LoginStatus status, ref CookieContainer cookies)
         {
             string gallUrl = "http://gall.dcinside.com";
@@ -83,6 +83,12 @@ namespace DCAdapter
             }
         }
 
+        /// <summary>
+        /// 갤로그의 메인 화면을 요청하는 함수
+        /// </summary>
+        /// <param name="id">사용자의 ID</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>갤로그 메인화면의 HTML 소스</returns>
         internal static string RequestGallogHtml(string id, ref CookieContainer cookies)
         {
             const string _gallogURL = "http://gallog.dcinside.com/";
@@ -111,39 +117,15 @@ namespace DCAdapter
 
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
-
-        internal static string RequestGallogMainList(string user_id, ref CookieContainer cookies)
-        {
-            const string _reqURL = "http://gallog.dcinside.com/inc/_mainList.php";
-            string referer = "http://gallog.dcinside.com/" + user_id;
-
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?gid=" + user_id);
-
-            req.Referer = referer;
-            req.Host = "gallog.dcinside.com";
-            req.UserAgent = UserAgent;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
-            req.Method = "GET";
-            req.Proxy = null;
-
-            using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
-            {
-                if (res.StatusCode == HttpStatusCode.OK)
-                {
-                    using (Stream stream = res.GetResponseStream())
-                    {
-                        using (StreamReader reader = new StreamReader(stream))
-                        {
-                            string result = reader.ReadToEnd();
-                            return result;
-                        }
-                    }
-                }
-            }
-
-            throw new Exception("갤로그 글 리스트를 불러올 수 없습니다.");
-        }
-
+        
+        /// <summary>
+        /// 갤로그에서 글 또는 댓글 페이지를 가져오는 함수
+        /// </summary>
+        /// <param name="user_id">사용자의 ID</param>
+        /// <param name="page">쓴 글의 갤로그 페이지 번호</param>
+        /// <param name="cPage">쓴 댓글의 갤로그 페이지 번호</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>요청한 페이지의 HTML 소스</returns>
         internal static string RequestWholePage(string user_id, int page, int cPage, ref CookieContainer cookies)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_mainGallog.php";
@@ -180,6 +162,16 @@ namespace DCAdapter
             throw new Exception("갤로그 글 리스트를 불러올 수 없습니다.");
         }
 
+        /// <summary>
+        /// 갤러리에서 닉네임으로 검색하는 함수
+        /// </summary>
+        /// <param name="gall_id">갤러리 ID</param>
+        /// <param name="gallType">갤러리 구분</param>
+        /// <param name="nickname">검색할 닉네임</param>
+        /// <param name="searchPos">갤러리 검색에 사용되는 위치변수</param>
+        /// <param name="searchPage">갤러리 검색에 사용되는 페이지</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>검색된 페이지의 HTML 소스</returns>
         internal static string RequestGalleryNickNameSearchPage(string gall_id, GalleryType gallType, string nickname, ref int searchPos, ref int searchPage, ref CookieContainer cookies)
         {
             string searchPath = null;
@@ -532,6 +524,14 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
 
+        /// <summary>
+        /// 갤러리의 댓글 삭제를 요청하는 함수
+        /// </summary>
+        /// <param name="gallid">갤러리 ID</param>
+        /// <param name="articleid">글 ID</param>
+        /// <param name="commentid">댓글 ID</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>갤러리 댓글 삭제 결과</returns>
         internal static DeleteResult RequestDeleteComment(string gallid, string articleid, string commentid, ref CookieContainer cookies)
         {
             string pageHtml = RequestArticleCommentViewPage(gallid, articleid, ref cookies);
@@ -599,6 +599,17 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
 
+        /// <summary>
+        /// 갤로그의 쓴 글 삭제를 요청하는 함수
+        /// </summary>
+        /// <param name="id">사용자 ID</param>
+        /// <param name="gall_id">갤러리 ID</param>
+        /// <param name="gall_no">갤러리 번호</param>
+        /// <param name="art_id">글 ID</param>
+        /// <param name="logNo">갤로그 Log 번호</param>
+        /// <param name="delay">삭제 딜레이</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>갤로그 글 삭제 결과</returns>
         internal static DeleteResult RequestDeleteGallogArticle(string id, string gall_id, string gall_no, string art_id, string logNo, int delay, ref CookieContainer cookies)
         {
             string pageHtml = RequestDeleteGallogArticlePage(id, gall_no, art_id, logNo, ref cookies);
@@ -665,6 +676,18 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
 
+        /// <summary>
+        /// 갤로그의 댓글 삭제를 요청하는 함수
+        /// </summary>
+        /// <param name="id">사용자 ID</param>
+        /// <param name="gall_id">갤러리 ID</param>
+        /// <param name="gall_no">갤러리 번호</param>
+        /// <param name="art_id">댓글을 쓴 글의 번호</param>
+        /// <param name="comment_id">댓글의 번호</param>
+        /// <param name="logNo">갤로그의 Log 번호</param>
+        /// <param name="delay">삭제 딜레이</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>갤로그 댓글 삭제 결과</returns>
         internal static DeleteResult RequestDeleteGallogComment(string id, string gall_id, string gall_no, string art_id, string comment_id, string logNo, int delay, ref CookieContainer cookies)
         {
             string pageHtml = RequestDeleteGallogCommentPage(id, art_id, comment_id, logNo, ref cookies);
@@ -750,6 +773,13 @@ namespace DCAdapter
             response.Close();
         }
 
+        /// <summary>
+        /// 댓글 삭제시 댓글을 쓴 글을 요청하는 함수
+        /// </summary>
+        /// <param name="gallid">갤러리 ID</param>
+        /// <param name="articleid">글 번호</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>요청한 페이지의 HTML 소스</returns>
         private static string RequestArticleCommentViewPage(string gallid, string articleid, ref CookieContainer cookies)
         {
             const string _reqURL = "http://gall.dcinside.com/board/comment_view/";
@@ -783,6 +813,15 @@ namespace DCAdapter
             throw new Exception("글을 불러올 수 없습니다.");
         }
 
+        /// <summary>
+        /// 갤러리의 글 삭제 페이지를 요청하는 함수
+        /// </summary>
+        /// <param name="gallId">갤 ID</param>
+        /// <param name="no">글 번호</param>
+        /// <param name="key">글 삭제시 필요한 Key(유동닉 마이너 갤러리 2차 삭제시 필요)</param>
+        /// <param name="gallType">갤러리 구분</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>삭제 페이지의 HTML 소스</returns>
         private static string RequestDeleteAritclePage(string gallId, string no, string key, GalleryType gallType, ref CookieContainer cookies)
         {
             string _reqURL = null;
@@ -836,6 +875,15 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
 
+        /// <summary>
+        /// 갤로그의 글 삭제 페이지를 요청하는 함수
+        /// </summary>
+        /// <param name="id">사용자 ID</param>
+        /// <param name="gall_no">갤러리 번호</param>
+        /// <param name="art_id">글 ID</param>
+        /// <param name="logNo">갤로그 Log 번호</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>갤로그 글 삭제 페이지의 HTML 소스</returns>
         private static string RequestDeleteGallogArticlePage(string id, string gall_no, string art_id, string logNo, ref CookieContainer cookies)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteLog.php";
@@ -869,6 +917,13 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
 
+        /// <summary>
+        /// 갤로그의 글 삭제 페이지를 요청하는 함수
+        /// </summary>
+        /// <param name="url">삭제할 글의 URL</param>
+        /// <param name="id">사용자 ID</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>삭제 페이지의 HTML 소스</returns>
         internal static string RequestDeleteGallogArticlePage(string url, string id, ref CookieContainer cookies)
         {
             string referer = "http://gallog.dcinside.com/inc/_mainGallog.php?gid=" + id;
@@ -901,6 +956,15 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
 
+        /// <summary>
+        /// 갤로그의 댓글 삭제 페이지를 요청하는 함수
+        /// </summary>
+        /// <param name="id">사용자 ID</param>
+        /// <param name="art_id">댓글을 쓴 글의 ID</param>
+        /// <param name="commentId">댓글 ID</param>
+        /// <param name="logNo">갤로그 Log 번호</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>삭제 페이지의 HTML 소스</returns>
         private static string RequestDeleteGallogCommentPage(string id, string art_id, string commentId, string logNo, ref CookieContainer cookies)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteLogRep.php";
@@ -934,6 +998,13 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
 
+        /// <summary>
+        /// 갤로그의 댓글 삭제 페이지를 요청하는 함수
+        /// </summary>
+        /// <param name="url">삭제 페이지의 URL</param>
+        /// <param name="user_id">사용자 ID</param>
+        /// <param name="cookies">클리너 쿠키 컨테이너</param>
+        /// <returns>삭제 페이지의 HTML 소스</returns>
         internal static string RequestDeleteGallogCommentPage(string url, string user_id, ref CookieContainer cookies)
         {
             string referer = "http://gallog.dcinside.com/inc/_mainGallog.php?gid=" + user_id;

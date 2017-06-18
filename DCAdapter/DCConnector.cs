@@ -168,6 +168,10 @@ namespace DCAdapter
             return articleList;
         }
 
+        /// <summary>
+        /// 갤로그의 댓글 목록을 불러옵니다.
+        /// </summary>
+        /// <returns>갤로그의 댓글 목록을 반환합니다.</returns>
         public List<CommentInfo> LoadGallogComments()
         {
             string html = "";
@@ -224,6 +228,11 @@ namespace DCAdapter
             return commentList;
         }
 
+        /// <summary>
+        /// 갤로그의 쓴 글 목록을 요청하는 함수
+        /// </summary>
+        /// <param name="page">요청할 페이지 번호</param>
+        /// <returns>해당 페이지의 글 목록</returns>
         private List<ArticleInfo> LoadArticleList(int page)
         {
             string html = HttpRequest.RequestWholePage(user_id, page, 1, ref cookies);
@@ -232,6 +241,11 @@ namespace DCAdapter
             return articleList;
         }
 
+        /// <summary>
+        /// 갤로그의 댓글 목록을 요청하는 함수
+        /// </summary>
+        /// <param name="page">요청할 페이지 번호</param>
+        /// <returns>해당 페이지의 댓글 목록</returns>
         private List<CommentInfo> LoadCommentList(int page)
         {
             string html = HttpRequest.RequestWholePage(user_id, 1, page, ref cookies);
@@ -240,6 +254,16 @@ namespace DCAdapter
             return articleList;
         }
 
+        /// <summary>
+        /// 갤러리에서 닉네임으로 검색하는 함수
+        /// </summary>
+        /// <param name="gall_id">갤러리 ID</param>
+        /// <param name="gallType">갤러리 구분</param>
+        /// <param name="nickname">사용자 ID</param>
+        /// <param name="searchPos">검색 위치</param>
+        /// <param name="searchPage">검색 페이지</param>
+        /// <param name="cont">검색이 계속되는지 여부</param>
+        /// <returns>검색된 글 목록</returns>
         public List<SearchedArticleInfo> SearchArticles(string gall_id, GalleryType gallType, string nickname, ref int searchPos, ref int searchPage, out bool cont)
         {
             List<SearchedArticleInfo> searchedArticleList = new List<SearchedArticleInfo>();
@@ -312,6 +336,12 @@ namespace DCAdapter
             return searchedArticleList;
         }
 
+        /// <summary>
+        /// 글을 삭제하는 함수
+        /// </summary>
+        /// <param name="info">삭제할 글 정보</param>
+        /// <param name="both">갤러리만 삭제/갤로그 까지 삭제 여부</param>
+        /// <returns>삭제 요청한 글의 정보</returns>
         public ArticleInfo DeleteArticle(ArticleInfo info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
@@ -338,6 +368,17 @@ namespace DCAdapter
             return DeleteArticle(info, gall_id, gall_no, article_id, logNo, GalleryType.Normal, both);
         }
 
+        /// <summary>
+        /// 글을 삭제하는 함수
+        /// </summary>
+        /// <param name="info">삭제할 글의 정보</param>
+        /// <param name="gall_id">갤러리 ID</param>
+        /// <param name="gall_no">갤러리 번호</param>
+        /// <param name="article_id">글 ID</param>
+        /// <param name="logNo">갤로그 로그 번호</param>
+        /// <param name="gallType">갤러리 구분</param>
+        /// <param name="both">갤러리만 삭제/갤로그도 삭제 여부</param>
+        /// <returns>삭제 요청한 글의 정보</returns>
         public ArticleInfo DeleteArticle(ArticleInfo info, string gall_id, string gall_no, string article_id, string logNo, GalleryType gallType, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
@@ -405,6 +446,12 @@ namespace DCAdapter
             return info;
         }
 
+        /// <summary>
+        /// 댓글을 삭제하는 함수
+        /// </summary>
+        /// <param name="info">삭제할 댓글의 정보</param>
+        /// <param name="both">갤러리만/갤로그도 삭제 여부</param>
+        /// <returns>삭제 요청한 댓글의 정보</returns>
         public CommentInfo DeleteComment(CommentInfo info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
@@ -431,6 +478,17 @@ namespace DCAdapter
             return DeleteComment(info, gall_id, gall_no, article_id, comment_id, logNo, both);
         }
 
+        /// <summary>
+        /// 댓글을 삭제하는 함수
+        /// </summary>
+        /// <param name="info">삭제할 댓글의 정보</param>
+        /// <param name="gall_id">갤러리 ID</param>
+        /// <param name="gall_no">갤러리 번호</param>
+        /// <param name="article_id">글 ID</param>
+        /// <param name="comment_id">댓글 ID</param>
+        /// <param name="logNo">갤로그 Log 번호</param>
+        /// <param name="both">갤러리만/갤로그도 삭제 여부</param>
+        /// <returns>삭제 요청한 댓글의 정보</returns>
         public CommentInfo DeleteComment(CommentInfo info, string gall_id, string gall_no, string article_id, string comment_id, string logNo, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
@@ -497,6 +555,14 @@ namespace DCAdapter
             return info;
         }
 
+        /// <summary>
+        /// 삭제할 글의 정보를 가져오는 함수
+        /// </summary>
+        /// <param name="url">삭제할 글의 갤로그 URL</param>
+        /// <param name="gall_id">갤러리 ID</param>
+        /// <param name="gall_no">갤러리 번호</param>
+        /// <param name="article_id">글 ID</param>
+        /// <param name="logNo">갤로그 로그 번호</param>
         private void GetDeleteArticleInfo(string url, out string gall_id, out string gall_no, out string article_id, out string logNo)
         {
             gall_id = null;
@@ -508,6 +574,15 @@ namespace DCAdapter
             HtmlParser.GetGallogArticleInfo(galHtml, out gall_id, out gall_no, out article_id, out logNo);
         }
 
+        /// <summary>
+        /// 삭제할 댓글의 정보를 가져오는 함수
+        /// </summary>
+        /// <param name="url">삭제할 댓글의 갤로그 URL</param>
+        /// <param name="gall_id">갤러리 ID</param>
+        /// <param name="gall_no">갤러리 번호</param>
+        /// <param name="article_id">글 ID</param>
+        /// <param name="comment_id">댓글 ID</param>
+        /// <param name="logNo">갤러리 로그 번호</param>
         private void GetDeleteCommentInfo(string url, out string gall_id, out string gall_no, out string article_id, out string comment_id, out string logNo)
         {
             gall_id = null;

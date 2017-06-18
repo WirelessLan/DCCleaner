@@ -10,6 +10,11 @@ namespace DCAdapter
 {
     class HtmlParser
     {
+        /// <summary>
+        /// 갤로그의 글 갯수를 가져오는 함수
+        /// </summary>
+        /// <param name="html">갤로그의 HTML 소스</param>
+        /// <returns>글 갯수</returns>
         internal static int GetArticleCounts(string html)
         {
             HtmlDocument doc = new HtmlDocument();
@@ -20,6 +25,11 @@ namespace DCAdapter
             return ExtractNumber(cntNode.InnerText);
         }
 
+        /// <summary>
+        /// 갤로그의 댓글 갯수를 가져오는 함수
+        /// </summary>
+        /// <param name="html">갤로그의 HTML 소스</param>
+        /// <returns>댓글 갯수</returns>
         internal static int GetCommentCounts(string html)
         {
             HtmlDocument doc = new HtmlDocument();
@@ -30,6 +40,11 @@ namespace DCAdapter
             return ExtractNumber(cntNode.InnerText);
         }
 
+        /// <summary>
+        /// 문자열에서 정수를 추출하는 함수
+        /// </summary>
+        /// <param name="text">정수값을 추출할 문자열</param>
+        /// <returns>추출된 정수</returns>
         private static int ExtractNumber(string text)
         {
             string result = Regex.Replace(text, @"[^\d]", "");
@@ -37,6 +52,13 @@ namespace DCAdapter
             return int.Parse(result);
         }
 
+        /// <summary>
+        /// 삭제할 글의 파라미터를 가져오는 함수
+        /// </summary>
+        /// <param name="html">글 삭제 페이지의 HTML 소스</param>
+        /// <param name="gallType">갤러리 구분</param>
+        /// <param name="delete_Params">글 삭제에 필요한 파라미터</param>
+        /// <param name="lately_gallery">최근 방문한 갤러리</param>
         internal static void GetDeleteArticleParameters(string html, GalleryType gallType, out Dictionary<string, string> delete_Params, out string lately_gallery)
         {
             HtmlDocument doc = new HtmlDocument();
@@ -53,6 +75,7 @@ namespace DCAdapter
             }
             catch { }
 
+            // 삭제 노드가 없는 경우 이미 삭제된 글이거나 오류
             if(deleteNode == null)
             {
                 if(html.Contains("/error/deleted"))
@@ -92,6 +115,7 @@ namespace DCAdapter
             {
                 throw new Exception("알 수 없는 오류입니다.");
             }
+            // 글 삭제시 실행되는 스크립트의 추가 값을 가져옴
             JSParser.ParseAdditionalDeleteParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
 
             delete_Params.Add(jsParamName, jsParamValue);
