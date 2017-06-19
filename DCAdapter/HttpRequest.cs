@@ -27,9 +27,10 @@ namespace DCAdapter
         internal static bool RequestLogin(string id, string pw, out LoginStatus status, ref CookieContainer cookies)
         {
             string gallUrl = "http://gall.dcinside.com";
+            string skey;
 
             // 로그인 페이지에 한번은 접속해야 정상 동작함
-            RequestLoginPage(gallUrl, ref cookies);
+            RequestLoginPage(gallUrl, out skey, ref cookies);
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/member_check.php");
             request.Method = "POST";
@@ -41,7 +42,7 @@ namespace DCAdapter
 
             using (StreamWriter streamWriter = new StreamWriter(request.GetRequestStream()))
             {
-                streamWriter.Write("s_url=" + HttpUtility.UrlEncode(gallUrl) + "&tieup=&url=&user_id=" + id + "&password=" + pw + "&x=0&y=0&ssl_chk=on");
+                streamWriter.Write("s_url=" + HttpUtility.UrlEncode(gallUrl) + "&tieup=&url=&user_id=" + id + "&password=" + pw + "&x=0&y=0&ssl_chk=on&login_skey=" + skey);
             }
 
             using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
@@ -759,8 +760,9 @@ namespace DCAdapter
         /// </summary>
         /// <param name="gallUrl">DCInside 갤러리 메인 페이지 주소</param>
         /// <param name="cookies">(ref) 서버의 쿠키 정보를 저장하는 쿠키 컨테이너입니다.</param>
-        private static void RequestLoginPage(string gallUrl, ref CookieContainer cookies)
+        private static void RequestLoginPage(string gallUrl, out string skey, ref CookieContainer cookies)
         {
+            skey = null;
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl));
 
             request.Method = "GET";
@@ -769,8 +771,23 @@ namespace DCAdapter
             request.UserAgent = UserAgent;
             request.Proxy = null;
 
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            response.Close();
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            {
+                if(response.StatusCode == HttpStatusCode.OK)
+                {
+                    using (Stream resStream = response.GetResponseStream())
+                    {
+                        using (StreamReader reader = new StreamReader(resStream))
+                        {
+                            string result = reader.ReadToEnd();
+
+                            skey = HtmlParser.GetLoginParameter(result);
+                        }
+                    }
+                }
+                else
+                    throw new Exception("알 수 없는 오류입니다.");
+            }
         }
 
         /// <summary>

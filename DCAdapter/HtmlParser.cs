@@ -448,5 +448,17 @@ namespace DCAdapter
             randomKey = randomKeyNode.Attributes["name"].Value;
             randomVal = randomKeyNode.Attributes["value"].Value;
         }
+
+        internal static string GetLoginParameter(string src)
+        {
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(src);
+
+            HtmlNode skeyNode = doc.DocumentNode.SelectSingleNode("//input[contains(@type, 'hidden') and contains(@name, 'login_skey')]");
+            if (skeyNode == null)
+                throw new Exception("로그인 키를 파싱할 수 없습니다.");
+
+            return skeyNode.GetAttributeValue("value", "");
+        }
     }
 }
