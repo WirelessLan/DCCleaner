@@ -200,28 +200,6 @@ namespace DCAdapter
             check7 = chk7Node.Attributes["value"].Value;
         }
 
-        internal static void GetGallogArticleInfo(string pageHtml, out string gall_id, out string gall_no, out string article_id, out string logNo)
-        {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(pageHtml);
-
-            gall_id = null;
-            gall_no = null;
-            article_id = null;
-            logNo = null;
-
-            HtmlNode parentNode = doc.GetElementbyId("dTp").ParentNode;
-            HtmlNode gallNode = parentNode.SelectSingleNode(".//input[@name='id']");
-            HtmlNode cidNode = parentNode.SelectSingleNode(".//input[@name='cid']");
-            HtmlNode artNode = parentNode.SelectSingleNode(".//input[@name='pno']");
-            HtmlNode logNode = parentNode.SelectSingleNode(".//input[@name='logNo']");
-
-            gall_id = gallNode.Attributes["value"].Value;
-            gall_no = cidNode.Attributes["value"].Value;
-            article_id = artNode.Attributes["value"].Value;
-            logNo = logNode.Attributes["value"].Value;
-        }
-
         internal static List<CommentInfo> GetCommentList(string html)
         {
             HtmlDocument doc = new HtmlDocument();
@@ -270,60 +248,68 @@ namespace DCAdapter
             return arts;
         }
 
-        internal static void GetDeleteGallogArticleParameters(string pageHtml, out string gall_id, out string dcc_key, out string randomKey, out string randomValue)
+        internal static GallogArticleDeleteParameters GetDeleteGallogArticleParameters(string pageHtml)
         {
+            GallogArticleDeleteParameters newParams = new GallogArticleDeleteParameters();
+
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(pageHtml);
-
-            gall_id = "";
-            dcc_key = "";
-            randomKey = "";
-            randomValue = "";
-
-            HtmlNode gallNode = doc.DocumentNode.SelectSingleNode("//input[@name='id']");
+            
+            HtmlNode parentNode = doc.GetElementbyId("dTp").ParentNode;
+            HtmlNode gallNode = parentNode.SelectSingleNode(".//input[@name='id']");
+            HtmlNode cidNode = parentNode.SelectSingleNode(".//input[@name='cid']");
+            HtmlNode artNode = parentNode.SelectSingleNode(".//input[@name='pno']");
+            HtmlNode logNode = parentNode.SelectSingleNode(".//input[@name='logNo']");
             HtmlNode dcc_keyNode = doc.DocumentNode.SelectSingleNode("//input[@name='dcc_key']");
             int inputCnt = doc.DocumentNode.Descendants("input").Count();
             HtmlNode randomKeyNode = doc.DocumentNode.SelectSingleNode("//input[" + (inputCnt - 1) + "]");
+            
+            newParams.GalleryId = gallNode.Attributes["value"].Value;
+            newParams.GalleryNo = cidNode.Attributes["value"].Value;
+            newParams.ArticleId = artNode.Attributes["value"].Value;
+            newParams.LogNo = logNode.Attributes["value"].Value;
+            newParams.DCCKey = dcc_keyNode.Attributes["value"].Value;
+            newParams.AdditionalKey = randomKeyNode.Attributes["name"].Value;
+            newParams.AdditionalValue = randomKeyNode.Attributes["value"].Value;
 
-            gall_id = gallNode.Attributes["value"].Value;
-            dcc_key = dcc_keyNode.Attributes["value"].Value;
-            randomKey = randomKeyNode.Attributes["name"].Value;
-            randomValue = randomKeyNode.Attributes["value"].Value;
+            return newParams;
         }
 
-        internal static void GetGallogCommentInfo(string pageHtml, out string gall_id, out string gall_no, out string article_id, out string comment_id, out string logNo)
+        internal static GallogCommentDeleteParameters GetDeleteGallogCommentParameters(string pageHtml)
         {
+            GallogCommentDeleteParameters newParams = new GallogCommentDeleteParameters();
+
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(pageHtml);
-
-            gall_id = null;
-            gall_no = null;
-            article_id = null;
-            comment_id = null;
-            logNo = null;
-
+            
             HtmlNode parentNode = doc.GetElementbyId("dTp").ParentNode;
             HtmlNode idNode = parentNode.SelectSingleNode(".//input[@name='id']");
             HtmlNode cidNode = parentNode.SelectSingleNode(".//input[@name='cid']");
             HtmlNode artNode = parentNode.SelectSingleNode(".//input[@name='no']");
             HtmlNode cNode = parentNode.SelectSingleNode(".//input[@name='c_no']");
             HtmlNode logNode = parentNode.SelectSingleNode(".//input[@name='logNo']");
+            int inputCnt = doc.DocumentNode.Descendants("input").Count();
+            HtmlNode randomKeyNode = doc.DocumentNode.SelectSingleNode("//input[" + (inputCnt - 1) + "]");
 
-            gall_id = idNode.Attributes["value"].Value;
-            gall_no = cidNode.Attributes["value"].Value;
-            article_id = artNode.Attributes["value"].Value;
-            comment_id = cNode.Attributes["value"].Value;
-            logNo = logNode.Attributes["value"].Value;
+            newParams.GalleryId = idNode.Attributes["value"].Value;
+            newParams.GalleryNo = cidNode.Attributes["value"].Value;
+            newParams.ArticleId = artNode.Attributes["value"].Value;
+            newParams.CommentId = cNode.Attributes["value"].Value;
+            newParams.LogNo = logNode.Attributes["value"].Value;
+            newParams.AdditionalKey = randomKeyNode.Attributes["name"].Value;
+            newParams.AdditionalValue = randomKeyNode.Attributes["value"].Value;
+
+            return newParams;
         }
-
-        internal static List<SearchedArticleInfo> GetSearchedArticleList(string searchedHtml, string gall_id, string searchNick, GalleryType gallType, bool isFixed, ref int searchPos, out int maxPage)
+        
+        internal static List<ArticleInfo> GetSearchedArticleList(string searchedHtml, string gall_id, string searchNick, GalleryType gallType, bool isFixed, ref int searchPos, out int maxPage)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(searchedHtml);
 
             maxPage = 0;
 
-            List<SearchedArticleInfo> searchedList = new List<SearchedArticleInfo>();
+            List<ArticleInfo> searchedList = new List<ArticleInfo>();
 
             string baseUrl = "http://gall.dcinside.com/";
 
@@ -418,11 +404,14 @@ namespace DCAdapter
                 Uri subjectUri = new Uri(articleUrl);
                 string articleNo = HttpUtility.ParseQueryString(subjectUri.Query).Get("no");
 
-                SearchedArticleInfo info = new SearchedArticleInfo();
+                ArticleInfo info = new ArticleInfo();
                 info.Date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
                 info.Title = HttpUtility.HtmlDecode(title);
-                info.Gallery = gall_id;
-                info.ArticleID = articleNo;
+                info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameters()
+                {
+                    GalleryId = gall_id,
+                    ArticleID = articleNo
+                };
                 info.DeleteURL = deleteBasePath + "&no=" + articleNo;
 
                 searchedList.Add(info);
@@ -431,34 +420,18 @@ namespace DCAdapter
             return searchedList;
         }
 
-        internal static void GetDeleteGallogCommentParameters(string pageHtml, out string gall_id, out string randomKey, out string randomVal)
+        internal static Dictionary<string, string> GetLoginParameter(string src)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(pageHtml);
-
-            gall_id = "";
-            randomKey = "";
-            randomVal = "";
-
-            HtmlNode gallNode = doc.DocumentNode.SelectSingleNode("//input[@name='id']");
-            int inputCnt = doc.DocumentNode.Descendants("input").Count();
-            HtmlNode randomKeyNode = doc.DocumentNode.SelectSingleNode("//input[" + (inputCnt - 1) + "]");
-
-            gall_id = gallNode.Attributes["value"].Value;
-            randomKey = randomKeyNode.Attributes["name"].Value;
-            randomVal = randomKeyNode.Attributes["value"].Value;
-        }
-
-        internal static string GetLoginParameter(string src)
-        {
+            Dictionary<string, string> retParams = new Dictionary<string, string>();
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(src);
+                        
+            foreach(HtmlNode node in doc.DocumentNode.SelectNodes("//input[contains(@type, 'hidden')]"))
+            {
+                retParams.Add(node.Attributes["name"].Value, node.Attributes["value"].Value);
+            }
 
-            HtmlNode skeyNode = doc.DocumentNode.SelectSingleNode("//input[contains(@type, 'hidden') and contains(@name, 'login_skey')]");
-            if (skeyNode == null)
-                throw new Exception("로그인 키를 파싱할 수 없습니다.");
-
-            return skeyNode.GetAttributeValue("value", "");
+            return retParams;
         }
     }
 }

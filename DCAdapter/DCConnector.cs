@@ -264,9 +264,9 @@ namespace DCAdapter
         /// <param name="searchPage">검색 페이지</param>
         /// <param name="cont">검색이 계속되는지 여부</param>
         /// <returns>검색된 글 목록</returns>
-        public List<SearchedArticleInfo> SearchArticles(string gall_id, GalleryType gallType, string nickname, ref int searchPos, ref int searchPage, out bool cont)
+        public List<ArticleInfo> SearchArticles(string gall_id, GalleryType gallType, string nickname, ref int searchPos, ref int searchPage, out bool cont)
         {
-            List<SearchedArticleInfo> searchedArticleList = new List<SearchedArticleInfo>();
+            List<ArticleInfo> searchedArticleList = new List<ArticleInfo>();
             int maxPage = 1;
 
             cont = false;
@@ -312,7 +312,7 @@ namespace DCAdapter
 
                 int tmpPos = searchPos;
 
-                List<SearchedArticleInfo> newSearchedList = HtmlParser.GetSearchedArticleList(searchHtml, gall_id, nickname, gallType, isLogin, ref searchPos, out maxPage);
+                List<ArticleInfo> newSearchedList = HtmlParser.GetSearchedArticleList(searchHtml, gall_id, nickname, gallType, isLogin, ref searchPos, out maxPage);
 
                 searchedArticleList.AddRange(newSearchedList);
 
@@ -335,23 +335,16 @@ namespace DCAdapter
 
             return searchedArticleList;
         }
-
-        /// <summary>
-        /// 글을 삭제하는 함수
-        /// </summary>
-        /// <param name="info">삭제할 글 정보</param>
-        /// <param name="both">갤러리만 삭제/갤로그 까지 삭제 여부</param>
-        /// <returns>삭제 요청한 글의 정보</returns>
+        
         public ArticleInfo DeleteArticle(ArticleInfo info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
-
-            string gall_id, gall_no, article_id, logNo;
-
+            
+            GallogArticleDeleteParameters delParams = null;
             try
             {
-                this.GetDeleteArticleInfo(info.DeleteURL, out gall_id, out gall_no, out article_id, out logNo);
+                delParams = this.GetDeleteArticleInfo(info.DeleteURL);
             }
             catch(ThreadAbortException) { throw; }
             catch(Exception e)
@@ -363,23 +356,19 @@ namespace DCAdapter
                 return info;
             }
 
+            info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameters()
+            {
+                GalleryId = delParams.GalleryId,
+                ArticleID = delParams.ArticleId
+            };
+            info.GallogArticleDeleteParameters = delParams;
+
             Thread.Sleep(delay);
 
-            return DeleteArticle(info, gall_id, gall_no, article_id, logNo, GalleryType.Normal, both);
+            return DeleteArticle(info, GalleryType.Normal, both);
         }
-
-        /// <summary>
-        /// 글을 삭제하는 함수
-        /// </summary>
-        /// <param name="info">삭제할 글의 정보</param>
-        /// <param name="gall_id">갤러리 ID</param>
-        /// <param name="gall_no">갤러리 번호</param>
-        /// <param name="article_id">글 ID</param>
-        /// <param name="logNo">갤로그 로그 번호</param>
-        /// <param name="gallType">갤러리 구분</param>
-        /// <param name="both">갤러리만 삭제/갤로그도 삭제 여부</param>
-        /// <returns>삭제 요청한 글의 정보</returns>
-        public ArticleInfo DeleteArticle(ArticleInfo info, string gall_id, string gall_no, string article_id, string logNo, GalleryType gallType, bool both)
+        
+        public ArticleInfo DeleteArticle(ArticleInfo info, GalleryType gallType, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
@@ -388,9 +377,9 @@ namespace DCAdapter
             try
             {
                 if (IsLogin)
-                    res1 = HttpRequest.RequestDeleteArticle(gall_id, article_id, gallType, delay, ref cookies);
+                    res1 = HttpRequest.RequestDeleteArticle(info.GalleryArticleDeleteParameters, gallType, delay, ref cookies);
                 else
-                    res1 = HttpRequest.RequestDeleteFlowArticle(gall_id, article_id, logNo, gallType, delay, ref cookies);   // logNo를 패스워드로 사용
+                    res1 = HttpRequest.RequestDeleteFlowArticle(info.GalleryArticleDeleteParameters, gallType, delay, ref cookies);
             }
             catch (ThreadAbortException) { throw; }
             catch (Exception ex)
@@ -419,7 +408,7 @@ namespace DCAdapter
 
                 try
                 {
-                    res2 = HttpRequest.RequestDeleteGallogArticle(user_id, gall_id, gall_no, article_id, logNo, delay, ref cookies);
+                    res2 = HttpRequest.RequestDeleteGallogArticle(info.GallogArticleDeleteParameters, delay, ref cookies);
                 }
                 catch (ThreadAbortException) { throw; }
                 catch (Exception ex)
@@ -445,23 +434,16 @@ namespace DCAdapter
             info.GallogDelete = true;
             return info;
         }
-
-        /// <summary>
-        /// 댓글을 삭제하는 함수
-        /// </summary>
-        /// <param name="info">삭제할 댓글의 정보</param>
-        /// <param name="both">갤러리만/갤로그도 삭제 여부</param>
-        /// <returns>삭제 요청한 댓글의 정보</returns>
+        
         public CommentInfo DeleteComment(CommentInfo info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
-
-            string gall_id, gall_no, article_id, comment_id, logNo;
+            GallogCommentDeleteParameters delParams = null;
 
             try
             {
-                this.GetDeleteCommentInfo(info.DeleteURL, out gall_id, out gall_no, out article_id, out comment_id, out logNo);
+                delParams = this.GetDeleteCommentInfo(info.DeleteURL);
             }
             catch (ThreadAbortException) { throw; }
             catch (Exception e)
@@ -473,23 +455,20 @@ namespace DCAdapter
                 return info;
             }
 
+            info.GalleryCommentDeleteParameters = new GalleryCommentDeleteParameters()
+            {
+                GalleryId = delParams.GalleryId,
+                ArticleId = delParams.ArticleId,
+                CommentId = delParams.CommentId
+            };
+            info.GallogCommentDeleteParameters = delParams;
+
             Thread.Sleep(delay);
 
-            return DeleteComment(info, gall_id, gall_no, article_id, comment_id, logNo, both);
+            return DeleteComment(info, true, both);
         }
-
-        /// <summary>
-        /// 댓글을 삭제하는 함수
-        /// </summary>
-        /// <param name="info">삭제할 댓글의 정보</param>
-        /// <param name="gall_id">갤러리 ID</param>
-        /// <param name="gall_no">갤러리 번호</param>
-        /// <param name="article_id">글 ID</param>
-        /// <param name="comment_id">댓글 ID</param>
-        /// <param name="logNo">갤로그 Log 번호</param>
-        /// <param name="both">갤러리만/갤로그도 삭제 여부</param>
-        /// <returns>삭제 요청한 댓글의 정보</returns>
-        public CommentInfo DeleteComment(CommentInfo info, string gall_id, string gall_no, string article_id, string comment_id, string logNo, bool both)
+        
+        public CommentInfo DeleteComment(CommentInfo info, bool actualDelete, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
@@ -498,7 +477,7 @@ namespace DCAdapter
 
             try
             {
-                res1 = HttpRequest.RequestDeleteComment(gall_id, article_id, comment_id, ref cookies);
+                res1 = HttpRequest.RequestDeleteComment(info.GalleryCommentDeleteParameters, ref cookies);
             }
             catch (ThreadAbortException) { throw; }
             catch (Exception ex)
@@ -527,7 +506,7 @@ namespace DCAdapter
 
                 try
                 {
-                    res2 = HttpRequest.RequestDeleteGallogComment(user_id, gall_id, gall_no, article_id, comment_id, logNo, delay, ref cookies);
+                    res2 = HttpRequest.RequestDeleteGallogComment(info.GallogCommentDeleteParameters, delay, ref cookies);
                 }
                 catch (Exception ex)
                 {
@@ -554,45 +533,21 @@ namespace DCAdapter
 
             return info;
         }
-
-        /// <summary>
-        /// 삭제할 글의 정보를 가져오는 함수
-        /// </summary>
-        /// <param name="url">삭제할 글의 갤로그 URL</param>
-        /// <param name="gall_id">갤러리 ID</param>
-        /// <param name="gall_no">갤러리 번호</param>
-        /// <param name="article_id">글 ID</param>
-        /// <param name="logNo">갤로그 로그 번호</param>
-        private void GetDeleteArticleInfo(string url, out string gall_id, out string gall_no, out string article_id, out string logNo)
+        
+        private GallogArticleDeleteParameters GetDeleteArticleInfo(string url)
         {
-            gall_id = null;
-            gall_no = null;
-            article_id = null;
-            logNo = null;
-
             string galHtml = HttpRequest.RequestDeleteGallogArticlePage(url, user_id, ref cookies);
-            HtmlParser.GetGallogArticleInfo(galHtml, out gall_id, out gall_no, out article_id, out logNo);
+            GallogArticleDeleteParameters retParams = HtmlParser.GetDeleteGallogArticleParameters(galHtml);
+            retParams.UserId = user_id;
+            return retParams;
         }
-
-        /// <summary>
-        /// 삭제할 댓글의 정보를 가져오는 함수
-        /// </summary>
-        /// <param name="url">삭제할 댓글의 갤로그 URL</param>
-        /// <param name="gall_id">갤러리 ID</param>
-        /// <param name="gall_no">갤러리 번호</param>
-        /// <param name="article_id">글 ID</param>
-        /// <param name="comment_id">댓글 ID</param>
-        /// <param name="logNo">갤러리 로그 번호</param>
-        private void GetDeleteCommentInfo(string url, out string gall_id, out string gall_no, out string article_id, out string comment_id, out string logNo)
+        
+        private GallogCommentDeleteParameters GetDeleteCommentInfo(string url)
         {
-            gall_id = null;
-            gall_no = null;
-            article_id = null;
-            comment_id = null;
-            logNo = null;
-
             string galHtml = HttpRequest.RequestDeleteGallogCommentPage(url, user_id, ref cookies);
-            HtmlParser.GetGallogCommentInfo(galHtml, out gall_id, out gall_no, out article_id, out comment_id, out logNo);
+            GallogCommentDeleteParameters retParams = HtmlParser.GetDeleteGallogCommentParameters(galHtml);
+            retParams.UserId = user_id;
+            return retParams;
         }
     }
 }

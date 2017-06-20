@@ -12,7 +12,7 @@ namespace DCCleaner
         DCConnector conn;
         List<ArticleInfo> articleList = null;
         List<CommentInfo> commentList = null;
-        List<SearchedArticleInfo> searchedList = null;
+        List<ArticleInfo> searchedList = null;
         bool isSearching = false;
         Thread loadingThread = null;
         object lockObject = new object();
@@ -596,7 +596,7 @@ namespace DCCleaner
             if (searchedList != null)
                 searchedList.Clear();
             else
-                searchedList = new List<SearchedArticleInfo>();
+                searchedList = new List<ArticleInfo>();
 
             string gall_id, nickname;
             gall_id = tb_SearchGalleryID.Text.Trim();
@@ -613,7 +613,7 @@ namespace DCCleaner
                 int pos = 0;
                 int page = 1;
                 bool cont = false;
-                List<SearchedArticleInfo> newSearchedList;
+                List<ArticleInfo> newSearchedList;
 
                 lock (lockObject)
                 {
@@ -685,9 +685,9 @@ namespace DCCleaner
             }
         }
 
-        private void LoadSearchedList(List<SearchedArticleInfo> searchedList)
+        private void LoadSearchedList(List<ArticleInfo> searchedList)
         {
-            foreach (SearchedArticleInfo info in searchedList)
+            foreach (ArticleInfo info in searchedList)
             {
                 dgv_SearchArticle.Rows.Add(info.Title, info.Date);
             }
@@ -730,14 +730,17 @@ namespace DCCleaner
 
                 for (int i = 0; i < delCnt; i++)
                 {
-                    SearchedArticleInfo info = searchedList[rmIdx];
+                    ArticleInfo info = searchedList[rmIdx];
                     ArticleInfo res = null;
                     try
                     {
                         if (!conn.IsLogin)
-                            res = conn.DeleteArticle(info, info.Gallery, null, info.ArticleID, password, gallType, false);
+                        {
+                            info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameters() { Password = password };
+                            res = conn.DeleteArticle(info, gallType, false);
+                        }
                         else
-                            res = conn.DeleteArticle(info, info.Gallery, null, info.ArticleID, null, gallType, false);
+                            res = conn.DeleteArticle(info, gallType, false);
                     }
                     catch (ThreadAbortException) { throw; }
                     catch
@@ -752,10 +755,7 @@ namespace DCCleaner
                         {
                             // 실패시, Sleep 후 1회 재시도
                             Thread.Sleep(100);
-                            if (!conn.IsLogin)
-                                res = conn.DeleteArticle(info, info.Gallery, null, info.ArticleID, password, gallType, false);
-                            else
-                                res = conn.DeleteArticle(info, info.Gallery, null, info.ArticleID, null, gallType, false);
+                            res = conn.DeleteArticle(info, gallType, false);
                             if (res.ActualDelete)
                                 break;
                         }
@@ -811,7 +811,7 @@ namespace DCCleaner
                 return;
 
             int selectedIdx = dgv_SearchArticle.SelectedRows[0].Index;
-            SearchedArticleInfo target = searchedList[selectedIdx];
+            ArticleInfo target = searchedList[selectedIdx];
 
             string msg = "상태 : " + (target.ActualDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
                        + "메시지 : " + (target.DeleteMessage);
@@ -847,7 +847,7 @@ namespace DCCleaner
                 return;
 
             int selectedIdx = dgv_SearchArticle.SelectedRows[0].Index;
-            SearchedArticleInfo target = searchedList[selectedIdx];
+            ArticleInfo target = searchedList[selectedIdx];
 
             if (loadingThread != null && loadingThread.IsAlive)
             {
@@ -876,10 +876,7 @@ namespace DCCleaner
             {
                 try
                 {
-                    if(!conn.IsLogin)
-                        conn.DeleteArticle(target, target.Gallery, null, target.ArticleID, password, gallType, false);
-                    else
-                        conn.DeleteArticle(target, target.Gallery, null, target.ArticleID, "", gallType, false);
+                    conn.DeleteArticle(target, gallType, false);
                 }
                 catch
                 {

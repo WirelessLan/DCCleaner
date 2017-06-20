@@ -30,7 +30,7 @@ namespace DCAdapter
             string skey;
 
             // 로그인 페이지에 한번은 접속해야 정상 동작함
-            RequestLoginPage(gallUrl, out skey, ref cookies);
+            Dictionary<string, string> LoginParams = RequestLoginPage(gallUrl, ref cookies);
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/member_check.php");
             request.Method = "POST";
@@ -42,7 +42,15 @@ namespace DCAdapter
 
             using (StreamWriter streamWriter = new StreamWriter(request.GetRequestStream()))
             {
-                streamWriter.Write("s_url=" + HttpUtility.UrlEncode(gallUrl) + "&tieup=&url=&user_id=" + id + "&password=" + pw + "&x=0&y=0&ssl_chk=on&login_skey=" + skey);
+                string param = "s_url=" + HttpUtility.UrlEncode(gallUrl) + "&tieup=&url=&user_id=" + id + "&password=" + pw + "&x=0&y=0&ssl_chk=on&";
+                foreach(KeyValuePair<string, string> kv in LoginParams)
+                {
+                    param += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
+                }
+
+                param = param.Substring(0, param.Length - 1);
+
+                streamWriter.Write(param);
             }
 
             using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
@@ -239,9 +247,9 @@ namespace DCAdapter
         /// <param name="delay">삭제 딜레이</param>
         /// <param name="cookies">클리너 쿠키 컨테이너</param>
         /// <returns>갤러리 글 삭제 결과</returns>
-        internal static DeleteResult RequestDeleteArticle(string gallId, string no, GalleryType gallType, int delay, ref CookieContainer cookies)
+        internal static DeleteResult RequestDeleteArticle(GalleryArticleDeleteParameters info, GalleryType gallType, int delay, ref CookieContainer cookies)
         {
-            string pageHtml = RequestDeleteAritclePage(gallId, no, null, gallType, ref cookies);
+            string pageHtml = RequestDeleteAritclePage(info.GalleryId, info.ArticleID, null, gallType, ref cookies);
             Dictionary<string, string> delete_params = null;
             string lately_gallery = null;
             
@@ -266,12 +274,12 @@ namespace DCAdapter
             if (gallType == GalleryType.Normal)
             {
                 _reqURL = "http://gall.dcinside.com/forms/delete_submit";
-                referer = "http://gall.dcinside.com/board/delete/?id=" + gallId + "&no=" + no;
+                referer = "http://gall.dcinside.com/board/delete/?id=" + info.GalleryId + "&no=" + info.ArticleID;
             }
             else if (gallType == GalleryType.Minor)
             {
                 _reqURL = "http://gall.dcinside.com/mgallery/forms/delete_submit";
-                referer = "http://gall.dcinside.com/mgallery/board/delete/?id=" + gallId + "&no=" + no;
+                referer = "http://gall.dcinside.com/mgallery/board/delete/?id=" + info.GalleryId + "&no=" + info.ArticleID;
             }
 
             if (_reqURL == null || referer == null)
@@ -317,7 +325,7 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            if(result == "true||" + gallId)
+                            if(result == "true||" + info.GalleryId)
                             {
                                 return new DeleteResult(true, "");
                             }
@@ -347,9 +355,9 @@ namespace DCAdapter
         /// <param name="delay">삭제 딜레이</param>
         /// <param name="cookies">클리너 쿠키 컨테이너</param>
         /// <returns>갤러리 글 삭제 결과</returns>
-        internal static DeleteResult RequestDeleteFlowArticle(string gallId, string no, string password, GalleryType gallType, int delay, ref CookieContainer cookies)
+        internal static DeleteResult RequestDeleteFlowArticle(GalleryArticleDeleteParameters delParam, GalleryType gallType, int delay, ref CookieContainer cookies)
         {
-            string pageHtml = RequestDeleteAritclePage(gallId, no, null, gallType, ref cookies);
+            string pageHtml = RequestDeleteAritclePage(delParam.GalleryId, delParam.ArticleID, null, gallType, ref cookies);
             Dictionary<string, string> delete_params = null;
             string lately_gallery = null;
 
@@ -374,12 +382,12 @@ namespace DCAdapter
             if (gallType == GalleryType.Normal)
             {
                 _reqURL = "http://gall.dcinside.com/forms/delete_password_submit";
-                referer = "http://gall.dcinside.com/board/delete/?id=" + gallId + "&no=" + no;
+                referer = "http://gall.dcinside.com/board/delete/?id=" + delParam.GalleryId + "&no=" + delParam.ArticleID;
             }
             else if (gallType == GalleryType.Minor)
             {
                 _reqURL = "http://gall.dcinside.com/mgallery/forms/delete_password_submit";
-                referer = "http://gall.dcinside.com/mgallery/board/delete/?id=" + gallId + "&no=" + no;
+                referer = "http://gall.dcinside.com/mgallery/board/delete/?id=" + delParam.GalleryId + "&no=" + delParam.ArticleID;
             }
 
             if (_reqURL == null || referer == null)
@@ -404,7 +412,7 @@ namespace DCAdapter
                 {
                     reqData += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
                 }
-                reqData += "password=" + password;
+                reqData += "password=" + delParam.Password;
 
                 writer.Write(reqData);
             }
@@ -424,7 +432,7 @@ namespace DCAdapter
                                 if (gallType == GalleryType.Normal)
                                     return new DeleteResult(true, "");
                                 else
-                                    return RequestDeleteMinorFlowArticle(gallId, no, result.Replace("true||", ""), ref cookies);
+                                    return RequestDeleteMinorFlowArticle(delParam, result.Replace("true||", ""), ref cookies);
                             }
                             else if (result == "false||비밀번호 인증에 실패하였습니다. 다시 시도해주세요" || 
                                 result == "false|| 비밀번호가 맞지 않습니다. 다시 시도해주세요" ||
@@ -452,9 +460,9 @@ namespace DCAdapter
         /// <param name="key">삭제 키</param>
         /// <param name="cookies">클리너 쿠키 컨테이너</param>
         /// <returns>갤러리 글 삭제 결과</returns>
-        private static DeleteResult RequestDeleteMinorFlowArticle(string gall_id, string no, string key, ref CookieContainer cookies)
+        private static DeleteResult RequestDeleteMinorFlowArticle(GalleryArticleDeleteParameters delParam, string key, ref CookieContainer cookies)
         {
-            string pageHtml = RequestDeleteAritclePage(gall_id, no, key, GalleryType.Minor, ref cookies);
+            string pageHtml = RequestDeleteAritclePage(delParam.GalleryId, delParam.ArticleID, key, GalleryType.Minor, ref cookies);
             Dictionary<string, string> delete_params = null;
             string nulString = null;
 
@@ -468,7 +476,7 @@ namespace DCAdapter
             }
 
             string _reqURL = "http://gall.dcinside.com/mgallery/forms/delete_submit";
-            string referer = "http://gall.dcinside.com/mgallery/board/delete/?id=" + gall_id + "&no=" + no + "&key=" + key;
+            string referer = "http://gall.dcinside.com/mgallery/board/delete/?id=" + delParam.GalleryId + "&no=" + delParam.ArticleID + "&key=" + key;
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
@@ -503,7 +511,7 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            if (result.StartsWith("true||" + gall_id))
+                            if (result.StartsWith("true||" + delParam.GalleryId))
                             {
                                 return new DeleteResult(true, "");
                             }
@@ -524,18 +532,10 @@ namespace DCAdapter
 
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
-
-        /// <summary>
-        /// 갤러리의 댓글 삭제를 요청하는 함수
-        /// </summary>
-        /// <param name="gallid">갤러리 ID</param>
-        /// <param name="articleid">글 ID</param>
-        /// <param name="commentid">댓글 ID</param>
-        /// <param name="cookies">클리너 쿠키 컨테이너</param>
-        /// <returns>갤러리 댓글 삭제 결과</returns>
-        internal static DeleteResult RequestDeleteComment(string gallid, string articleid, string commentid, ref CookieContainer cookies)
+        
+        internal static DeleteResult RequestDeleteComment(GalleryCommentDeleteParameters param, ref CookieContainer cookies)
         {
-            string pageHtml = RequestArticleCommentViewPage(gallid, articleid, ref cookies);
+            string pageHtml = RequestArticleCommentViewPage(param.GalleryId, param.ArticleId, ref cookies);
             string ci_t = null, check7 = null;
             
             try
@@ -550,7 +550,7 @@ namespace DCAdapter
 
             const string _reqURL = "http://gall.dcinside.com/forms/comment_delete_submit";
             const string host = "gall.dcinside.com";
-            string referer = "http://gall.dcinside.com/board/view/?id=" + gallid + "&no=" + articleid;
+            string referer = "http://gall.dcinside.com/board/view/?id=" + param.GalleryId + "&no=" + param.ArticleId;
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
@@ -565,8 +565,8 @@ namespace DCAdapter
 
             using (StreamWriter writer = new StreamWriter(req.GetRequestStream()))
             {
-                string reqData = "ci_t=" + ci_t + "&id=" + gallid + "&no=" + articleid + "&p_no=" + articleid +
-                                "&re_no=" + commentid + "&best_origin=&check_7=" + check7;
+                string reqData = "ci_t=" + ci_t + "&id=" + param.GalleryId + "&no=" + param.ArticleId + "&p_no=" + param.ArticleId +
+                                "&re_no=" + param.CommentId + "&best_origin=&check_7=" + check7;
                 writer.Write(reqData);
             }
 
@@ -611,25 +611,11 @@ namespace DCAdapter
         /// <param name="delay">삭제 딜레이</param>
         /// <param name="cookies">클리너 쿠키 컨테이너</param>
         /// <returns>갤로그 글 삭제 결과</returns>
-        internal static DeleteResult RequestDeleteGallogArticle(string id, string gall_id, string gall_no, string art_id, string logNo, int delay, ref CookieContainer cookies)
+        internal static DeleteResult RequestDeleteGallogArticle(GallogArticleDeleteParameters param, int delay, ref CookieContainer cookies)
         {
-            string pageHtml = RequestDeleteGallogArticlePage(id, gall_no, art_id, logNo, ref cookies);
-            string dcc_key = null, randKey = null, randVal = null;
-
-            try
-            {
-                HtmlParser.GetDeleteGallogArticleParameters(pageHtml, out gall_id, out dcc_key, out randKey, out randVal);
-            }
-            catch (Exception e)
-            {
-                return new DeleteResult(false, e.Message);
-            }
-
-            Thread.Sleep(delay);
-
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteArticle.php";
             const string host = "gallog.dcinside.com";
-            string referer = "http://gallog.dcinside.com/inc/_deleteLog.php?gid=" + id;
+            string referer = "http://gallog.dcinside.com/inc/_deleteLog.php?gid=" + param.UserId;
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
@@ -644,9 +630,10 @@ namespace DCAdapter
 
             using (StreamWriter writer = new StreamWriter(req.GetRequestStream()))
             {
-                string reqData = "rb=&dTp=1&gid=" + id + "&cid=" + gall_no +
-                    "&pno=" + art_id + "&no=" + art_id + "&logNo=" + logNo + "&id=" + gall_id +
-                    "&nate=&dcc_key=" + dcc_key + (randKey == "dcc_key" ? "" : ("&" + HttpUtility.UrlEncode(randKey) + "=" + HttpUtility.UrlEncode(randVal)));
+                string reqData = "rb=&dTp=1&gid=" + param.UserId + "&cid=" + param.GalleryNo +
+                    "&pno=" + param.ArticleId + "&no=" + param.ArticleId + "&logNo=" + param.LogNo + "&id=" + param.GalleryId +
+                    "&nate=&dcc_key=" + param.DCCKey
+                    + (param.AdditionalKey == "dcc_key" ? "" : ("&" + HttpUtility.UrlEncode(param.AdditionalKey) + "=" + HttpUtility.UrlEncode(param.AdditionalValue)));
                 writer.Write(reqData);
             }
 
@@ -689,25 +676,12 @@ namespace DCAdapter
         /// <param name="delay">삭제 딜레이</param>
         /// <param name="cookies">클리너 쿠키 컨테이너</param>
         /// <returns>갤로그 댓글 삭제 결과</returns>
-        internal static DeleteResult RequestDeleteGallogComment(string id, string gall_id, string gall_no, string art_id, string comment_id, string logNo, int delay, ref CookieContainer cookies)
+        internal static DeleteResult RequestDeleteGallogComment(GallogCommentDeleteParameters param, int delay, ref CookieContainer cookies)
         {
-            string pageHtml = RequestDeleteGallogCommentPage(id, art_id, comment_id, logNo, ref cookies);
-            string randomKey = null, randomVal = null;
-
-            try
-            {
-                HtmlParser.GetDeleteGallogCommentParameters(pageHtml, out gall_id, out randomKey, out randomVal);
-            }
-            catch (Exception e)
-            {
-                return new DeleteResult(false, e.Message);
-            }
-
-            Thread.Sleep(delay);
-
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteRepOk.php";
             const string host = "gallog.dcinside.com";
-            string referer = "http://gallog.dcinside.com/inc/_deleteLogRep.php?gid=" + id + "&cid=" + gall_no + "&id=" + gall_id + "&no=" + art_id + "&logNo=" + logNo + "&rpage=";
+            string referer = "http://gallog.dcinside.com/inc/_deleteLogRep.php?gid=" + param.UserId + "&cid=" 
+                            + param.GalleryNo + "&id=" + param.GalleryId + "&no=" + param.ArticleId + "&logNo=" + param.LogNo + "&rpage=";
             
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
@@ -722,9 +696,9 @@ namespace DCAdapter
 
             using (StreamWriter writer = new StreamWriter(req.GetRequestStream()))
             {
-                string reqData = "rb=&dTp=1&gid=" + id + "&cid=" + gall_no + "&page=&pno=" +
-                    "&no=" + art_id + "&c_no=" + comment_id + "&logNo=" + logNo + "&id=" + gall_id +
-                    "&nate=&" + HttpUtility.UrlEncode(randomKey) + "=" + HttpUtility.UrlEncode(randomVal);
+                string reqData = "rb=&dTp=1&gid=" + param.UserId + "&cid=" + param.GalleryNo + "&page=&pno=" +
+                    "&no=" + param.ArticleId + "&c_no=" + param.CommentId + "&logNo=" + param.LogNo + "&id=" + param.GalleryId +
+                    "&nate=&" + HttpUtility.UrlEncode(param.AdditionalKey) + "=" + HttpUtility.UrlEncode(param.AdditionalValue);
                 writer.Write(reqData);
             }
 
@@ -754,15 +728,9 @@ namespace DCAdapter
 
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
-
-        /// <summary>
-        /// 로그인 페이지를 요청합니다.
-        /// </summary>
-        /// <param name="gallUrl">DCInside 갤러리 메인 페이지 주소</param>
-        /// <param name="cookies">(ref) 서버의 쿠키 정보를 저장하는 쿠키 컨테이너입니다.</param>
-        private static void RequestLoginPage(string gallUrl, out string skey, ref CookieContainer cookies)
+        
+        private static Dictionary<string, string> RequestLoginPage(string gallUrl, ref CookieContainer cookies)
         {
-            skey = null;
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl));
 
             request.Method = "GET";
@@ -781,7 +749,7 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            skey = HtmlParser.GetLoginParameter(result);
+                            return HtmlParser.GetLoginParameter(result);
                         }
                     }
                 }
