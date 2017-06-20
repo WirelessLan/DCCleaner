@@ -27,7 +27,6 @@ namespace DCAdapter
         internal static bool RequestLogin(string id, string pw, out LoginStatus status, ref CookieContainer cookies)
         {
             string gallUrl = "http://gall.dcinside.com";
-            string skey;
 
             // 로그인 페이지에 한번은 접속해야 정상 동작함
             Dictionary<string, string> LoginParams = RequestLoginPage(gallUrl, ref cookies);

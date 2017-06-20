@@ -735,12 +735,8 @@ namespace DCCleaner
                     try
                     {
                         if (!conn.IsLogin)
-                        {
-                            info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameters() { Password = password };
-                            res = conn.DeleteArticle(info, gallType, false);
-                        }
-                        else
-                            res = conn.DeleteArticle(info, gallType, false);
+                            info.GalleryArticleDeleteParameters.Password = password;
+                        res = conn.DeleteArticle(info, gallType, false);
                     }
                     catch (ThreadAbortException) { throw; }
                     catch
@@ -871,11 +867,12 @@ namespace DCCleaner
             else if (rb_MinorGallery.Checked)
                 gallType = GalleryType.Minor;
 
-
             loadingThread = new Thread(new ThreadStart(delegate ()
             {
                 try
                 {
+                    if(!conn.IsLogin)
+                        target.GalleryArticleDeleteParameters.Password = password;
                     conn.DeleteArticle(target, gallType, false);
                 }
                 catch
