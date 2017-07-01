@@ -205,6 +205,7 @@ namespace DCAdapter
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(searchPath);
 
+            req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
             req.Method = "GET";
             req.CookieContainer = cookies;
             req.Proxy = null;
@@ -771,6 +772,7 @@ namespace DCAdapter
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?id=" + gallid + "&no=" + articleid);
             
             req.Method = "GET";
+            req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
             req.UserAgent = UserAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
@@ -833,6 +835,7 @@ namespace DCAdapter
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
             req.Method = "GET";
+            req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
             req.UserAgent = UserAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
