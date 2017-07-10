@@ -14,9 +14,8 @@ namespace DCAdapter
             name = null;
             value = null;
             encCode = null;
-
             
-            Match encData = Regex.Match(script, "_d\\(\'(.*)\'\\)");
+            Match encData = Regex.Match(script, "var _r = _d\\(\'(.*)\'\\)");
             if (encData.Success)
             {
                 encCode = encData.Groups[1].Value;
