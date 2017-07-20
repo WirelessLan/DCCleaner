@@ -40,6 +40,9 @@ namespace DCCleaner
 
             string id = tb_ID.Text.Trim();
             string pw = tb_PW.Text.Trim();
+
+            btn_Login.Enabled = false;
+            btn_NoAccn.Enabled = false;
             
             loginThread = new Thread(new ThreadStart(delegate ()
             {
@@ -54,6 +57,8 @@ namespace DCCleaner
                 {
                     this.Invoke(new Action(() =>
                     {
+                        btn_Login.Enabled = true;
+                        btn_NoAccn.Enabled = true;
                         this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
                     }));
 
@@ -71,6 +76,8 @@ namespace DCCleaner
                     }
                     else
                     {
+                        btn_Login.Enabled = true;
+                        btn_NoAccn.Enabled = true;
                         lbl_Error.Text = connector.LoginErrorMessage;
                     }
                 }));

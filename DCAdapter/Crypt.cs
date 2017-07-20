@@ -31,13 +31,13 @@ namespace DCAdapter
 
         private static string DecryptBase64WithKey(string jsEncCode)
         {
-            string key = "qAr0Bs1Ct2D3uE4Fv5G6wH7I8xJ9K+yL/M=zNaObPcQdReSfTgUhViWjXkYlZmnop";
+            string key = "qArOBs1Ct2D3uE4Fv5G6wH7l8xJ9K+yL/M=zNa0bPcQdReSfTgUhViWjXkYIZmnop";
 
             string o = "";
             int c1, c2, c3;
             int e1, e2, e3, e4;
             int i = 0;
-            jsEncCode = jsEncCode.Replace("[^A-Za-z0-9+/=]", "");
+            jsEncCode = Regex.Replace(jsEncCode, "[^A-Za-z0-9+/=]", "");
             while (i < jsEncCode.Length)
             {
                 e1 = key.IndexOf(jsEncCode[i++]);
@@ -45,8 +45,7 @@ namespace DCAdapter
                 e3 = key.IndexOf(jsEncCode[i++]);
                 e4 = key.IndexOf(jsEncCode[i++]);
                 c1 = (e1 << 2) | (e2 >> 4);
-                c2 = ((e2 & 15) << 4) | (e3 >>
-                    2);
+                c2 = ((e2 & 15) << 4) | (e3 >> 2);
                 c3 = ((e3 & 3) << 6) | e4;
                 o = o + ((char)c1).ToString();
                 if (e3 != 64)
