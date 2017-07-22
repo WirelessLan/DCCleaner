@@ -18,7 +18,8 @@ namespace DCAdapter
 #if false
             Match encData = Regex.Match(script, "var _r = _d\\(\'(.*)\'\\)");
 #else
-            Match encData = Regex.Match(script, "_d\\(\'(.*)\'\\)");
+            Match encData = null;
+            throw new Exception("스크립트 파싱에 실패하였습니다.");
 #endif
             if (encData.Success)
             {
