@@ -130,7 +130,6 @@
             this.MinimizeBox = false;
             this.Name = "Frm_Login";
             this.Text = "디시 클리너";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Frm_Login_FormClosing);
             this.gb_Login.ResumeLayout(false);
             this.gb_Login.PerformLayout();
             this.ResumeLayout(false);

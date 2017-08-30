@@ -2,6 +2,7 @@
 using System.Threading;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace DCAdapter
 {
@@ -61,7 +62,7 @@ namespace DCAdapter
         /// <param name="id">사용자의 ID</param>
         /// <param name="pw">사용자의 비밀번호</param>
         /// <returns>로그인 성공시 True, 실패시 False를 반환합니다.</returns>
-        public bool LoginDCInside(string id, string pw)
+        public async Task<bool> LoginDCInside(string id, string pw)
         {
             if(string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(pw))
             {
@@ -70,7 +71,10 @@ namespace DCAdapter
                 return false;
             }
 
-            if (HttpRequest.RequestLogin(id, pw, out status, ref cookies))
+            Tuple<LoginStatus, CookieContainer> result = await HttpRequest.RequestLogin(id, pw, status, cookies);
+            status = result.Item1;
+
+            if (status == LoginStatus.Success)
             {
                 errMsg = "";
                 isLogin = true;
@@ -83,22 +87,13 @@ namespace DCAdapter
                 isLogin = false;
 
                 if (status == LoginStatus.IDError)
-                {
                     errMsg = "존재하지 않는 아이디입니다.";
-
-                }
                 else if (status == LoginStatus.PasswordError)
-                {
                     errMsg = "잘못된 비밀번호입니다.";
-                }
                 else if (status == LoginStatus.ErrorBoth)
-                {
                     errMsg = "아이디 또는 비밀번호가 잘못되었습니다.";
-                }
                 else if(status == LoginStatus.Unknown)
-                {
                     errMsg = "서버 통신중 알 수없는 에러가 발생하였습니다.";
-                }
 
                 return false;
             }
@@ -108,8 +103,9 @@ namespace DCAdapter
         /// 갤로그의 글 목록을 불러옵니다.
         /// </summary>
         /// <returns>갤로그의 글 목록을 반환합니다.</returns>
-        public List<ArticleInfo> LoadGallogArticles()
+        public async Task<List<ArticleInfo>> LoadGallogArticles()
         {
+            Tuple<string, CookieContainer> htmlReqResult = null;
             string html = "";
             int articleCounts;
             int pageCnts;
@@ -119,7 +115,9 @@ namespace DCAdapter
             try
             {
                 // 갤로그의 HTML 소스를 요청
-                html = HttpRequest.RequestGallogHtml(this.user_id, ref cookies);
+                htmlReqResult = await HttpRequest.RequestGallogHtml(this.user_id, cookies);
+                html = htmlReqResult.Item1;
+                cookies = htmlReqResult.Item2;
             }
             catch (ThreadAbortException) { throw; }
             catch
@@ -137,7 +135,7 @@ namespace DCAdapter
                 List<ArticleInfo> newArticleList = null;
                 try
                 {
-                    newArticleList = LoadArticleList(i + 1);
+                    newArticleList = await LoadArticleList(i + 1);
                 }
                 catch
                 {
@@ -145,8 +143,8 @@ namespace DCAdapter
                     {
                         try
                         {
-                            Thread.Sleep(200);
-                            newArticleList = LoadArticleList(i + 1);
+                            await Task.Delay(200);
+                            newArticleList = await LoadArticleList(i + 1);
                         }
                         catch
                         {
@@ -172,8 +170,9 @@ namespace DCAdapter
         /// 갤로그의 댓글 목록을 불러옵니다.
         /// </summary>
         /// <returns>갤로그의 댓글 목록을 반환합니다.</returns>
-        public List<CommentInfo> LoadGallogComments()
+        public async Task<List<CommentInfo>> LoadGallogComments()
         {
+            Tuple<string, CookieContainer> htmlReqResult = null;
             string html = "";
             int commentCounts;
             int pageCnts;
@@ -182,7 +181,10 @@ namespace DCAdapter
 
             try
             {
-                html = HttpRequest.RequestGallogHtml(this.user_id, ref cookies);
+                // 갤로그의 HTML 소스를 요청
+                htmlReqResult = await HttpRequest.RequestGallogHtml(this.user_id, cookies);
+                html = htmlReqResult.Item1;
+                cookies = htmlReqResult.Item2;
             }
             catch (ThreadAbortException) { throw; }
             catch
@@ -198,7 +200,7 @@ namespace DCAdapter
                 List<CommentInfo> newCommentList = null;
                 try
                 {
-                    newCommentList = LoadCommentList(i + 1);
+                    newCommentList = await LoadCommentList(i + 1);
                 }
                 catch
                 {
@@ -206,8 +208,8 @@ namespace DCAdapter
                     {
                         try
                         {
-                            Thread.Sleep(200);
-                            newCommentList = LoadCommentList(i + 1);
+                            await Task.Delay(200);
+                            newCommentList = await LoadCommentList(i + 1);
                         }
                         catch
                         {
@@ -233,9 +235,11 @@ namespace DCAdapter
         /// </summary>
         /// <param name="page">요청할 페이지 번호</param>
         /// <returns>해당 페이지의 글 목록</returns>
-        private List<ArticleInfo> LoadArticleList(int page)
+        private async Task<List<ArticleInfo>> LoadArticleList(int page)
         {
-            string html = HttpRequest.RequestWholePage(user_id, page, 1, ref cookies);
+            Tuple<string, CookieContainer> reqResult = await HttpRequest.RequestWholePage(user_id, page, 1, cookies);
+            string html = reqResult.Item1;
+            cookies = reqResult.Item2;
             List<ArticleInfo> articleList = HtmlParser.GetArticleList(html);
 
             return articleList;
@@ -246,9 +250,11 @@ namespace DCAdapter
         /// </summary>
         /// <param name="page">요청할 페이지 번호</param>
         /// <returns>해당 페이지의 댓글 목록</returns>
-        private List<CommentInfo> LoadCommentList(int page)
+        private async Task<List<CommentInfo>> LoadCommentList(int page)
         {
-            string html = HttpRequest.RequestWholePage(user_id, 1, page, ref cookies);
+            Tuple<string, CookieContainer> reqResult = await HttpRequest.RequestWholePage(user_id, 1, page, cookies);
+            string html = reqResult.Item1;
+            cookies = reqResult.Item2;
             List<CommentInfo> articleList = HtmlParser.GetCommentList(html);
 
             return articleList;
@@ -264,51 +270,55 @@ namespace DCAdapter
         /// <param name="searchPage">검색 페이지</param>
         /// <param name="cont">검색이 계속되는지 여부</param>
         /// <returns>검색된 글 목록</returns>
-        public List<ArticleInfo> SearchArticles(string gall_id, GalleryType gallType, string nickname, ref int searchPos, ref int searchPage, out bool cont)
+        public async Task<Tuple<List<ArticleInfo>, int, int, bool>> SearchArticles(string gall_id, GalleryType gallType, string nickname, int searchPos, int searchPage, bool cont)
         {
             List<ArticleInfo> searchedArticleList = new List<ArticleInfo>();
             int maxPage = 1;
 
             cont = false;
 
-            if(searchPos != -1)
+            if (searchPos != -1)
             {
+                Tuple<string, int, int, CookieContainer> req = null;
                 string searchHtml = "";
 
                 try
                 {
-                    searchHtml = HttpRequest.RequestGalleryNickNameSearchPage(gall_id, gallType, nickname, ref searchPos, ref searchPage, ref cookies);
+                    req = await HttpRequest.RequestGalleryNickNameSearchPage(gall_id, gallType, nickname, searchPos, searchPage, cookies);
                 }
-                catch(ThreadAbortException) { throw; }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    if(ex.Message == "해당 갤러리는 존재하지 않습니다.")
+                    if (ex.Message == "해당 갤러리는 존재하지 않습니다.")
                     {
                         throw new Exception(ex.Message);
                     }
 
                     searchHtml = null;
 
-                    for (int j = 0; j < 3; j++)
+                    for (int j = 0; j < 5; j++)
                     {
                         try
                         {
-                            Thread.Sleep(200);
-                            searchHtml = HttpRequest.RequestGalleryNickNameSearchPage(gall_id, gallType, nickname, ref searchPos, ref searchPage, ref cookies);
+                            await Task.Delay(400);
+                            req = await HttpRequest.RequestGalleryNickNameSearchPage(gall_id, gallType, nickname, searchPos, searchPage, cookies);
 
-                            if (searchHtml != null)
+                            if (req != null && !string.IsNullOrWhiteSpace(req.Item1))
                                 break;
                         }
-                        catch(ThreadAbortException) { throw; }
                         catch
                         {
                             continue;
                         }
                     }
 
-                    if (string.IsNullOrWhiteSpace(searchHtml))
+                    if (req == null || string.IsNullOrWhiteSpace(req.Item1))
                         throw new Exception("글을 검색하는데 실패하였습니다.");
                 }
+
+                searchHtml = req.Item1;
+                searchPos = req.Item2;
+                searchPage = req.Item3;
+                cookies = req.Item4;
 
                 int tmpPos = searchPos;
 
@@ -333,10 +343,10 @@ namespace DCAdapter
                 cont = false;
             }
 
-            return searchedArticleList;
+            return new Tuple<List<ArticleInfo>, int, int, bool>(searchedArticleList, searchPos, searchPage, cont);
         }
         
-        public ArticleInfo DeleteArticle(ArticleInfo info, bool both)
+        public async Task<ArticleInfo> DeleteArticle(ArticleInfo info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
@@ -344,7 +354,7 @@ namespace DCAdapter
             GallogArticleDeleteParameters delParams = null;
             try
             {
-                delParams = this.GetDeleteArticleInfo(info.DeleteURL);
+                delParams = await this.GetDeleteArticleInfo(info.DeleteURL);
             }
             catch(ThreadAbortException) { throw; }
             catch(Exception e)
@@ -365,23 +375,23 @@ namespace DCAdapter
 
             Thread.Sleep(delay);
 
-            return DeleteArticle(info, GalleryType.Normal, both);
+            return await DeleteArticle(info, GalleryType.Normal, both);
         }
         
-        public ArticleInfo DeleteArticle(ArticleInfo info, GalleryType gallType, bool both)
+        public async Task<ArticleInfo> DeleteArticle(ArticleInfo info, GalleryType gallType, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
 
+            Tuple<DeleteResult, CookieContainer> req;
             DeleteResult res1 = null;
             try
             {
                 if (IsLogin)
-                    res1 = HttpRequest.RequestDeleteArticle(info.GalleryArticleDeleteParameters, gallType, delay, ref cookies);
+                    req = await HttpRequest.RequestDeleteArticle(info.GalleryArticleDeleteParameters, gallType, delay, cookies);
                 else
-                    res1 = HttpRequest.RequestDeleteFlowArticle(info.GalleryArticleDeleteParameters, gallType, delay, ref cookies);
+                    req = await HttpRequest.RequestDeleteFlowArticle(info.GalleryArticleDeleteParameters, gallType, delay, cookies);
             }
-            catch (ThreadAbortException) { throw; }
             catch (Exception ex)
             {
                 info.ActualDelete = false;
@@ -390,6 +400,9 @@ namespace DCAdapter
 
                 return info;
             }
+
+            res1 = req.Item1;
+            cookies = req.Item2;
 
             if (!res1.Success && res1.ErrorMessage != "이미 삭제된 글입니다.")
             {
@@ -408,9 +421,8 @@ namespace DCAdapter
 
                 try
                 {
-                    res2 = HttpRequest.RequestDeleteGallogArticle(info.GallogArticleDeleteParameters, delay, ref cookies);
+                    req = await HttpRequest.RequestDeleteGallogArticle(info.GallogArticleDeleteParameters, delay, cookies);
                 }
-                catch (ThreadAbortException) { throw; }
                 catch (Exception ex)
                 {
                     info.ActualDelete = true;
@@ -419,6 +431,9 @@ namespace DCAdapter
 
                     return info;
                 }
+
+                res2 = req.Item1;
+                cookies = req.Item2;
 
                 if (!res2.Success)
                 {
@@ -435,7 +450,7 @@ namespace DCAdapter
             return info;
         }
         
-        public CommentInfo DeleteComment(CommentInfo info, bool both)
+        public async Task<CommentInfo> DeleteComment(CommentInfo info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
@@ -443,7 +458,7 @@ namespace DCAdapter
 
             try
             {
-                delParams = this.GetDeleteCommentInfo(info.DeleteURL);
+                delParams = await this.GetDeleteCommentInfo(info.DeleteURL);
             }
             catch (ThreadAbortException) { throw; }
             catch (Exception e)
@@ -465,19 +480,21 @@ namespace DCAdapter
 
             Thread.Sleep(delay);
 
-            return DeleteComment(info, true, both);
+            return await DeleteComment(info, true, both);
         }
         
-        public CommentInfo DeleteComment(CommentInfo info, bool actualDelete, bool both)
+        public async Task<CommentInfo> DeleteComment(CommentInfo info, bool actualDelete, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
+
+            Tuple<DeleteResult, CookieContainer> req = null;
 
             DeleteResult res1 = null;
 
             try
             {
-                res1 = HttpRequest.RequestDeleteComment(info.GalleryCommentDeleteParameters, ref cookies);
+                req = await HttpRequest.RequestDeleteComment(info.GalleryCommentDeleteParameters, cookies);
             }
             catch (ThreadAbortException) { throw; }
             catch (Exception ex)
@@ -488,6 +505,9 @@ namespace DCAdapter
 
                 return info;
             }
+
+            res1 = req.Item1;
+            cookies = req.Item2;
 
             if (!res1.Success && res1.ErrorMessage != "이미 삭제된 리플입니다.")
             {
@@ -506,7 +526,7 @@ namespace DCAdapter
 
                 try
                 {
-                    res2 = HttpRequest.RequestDeleteGallogComment(info.GallogCommentDeleteParameters, delay, ref cookies);
+                    req = await HttpRequest.RequestDeleteGallogComment(info.GallogCommentDeleteParameters, delay, cookies);
                 }
                 catch (Exception ex)
                 {
@@ -516,6 +536,9 @@ namespace DCAdapter
 
                     return info;
                 }
+
+                res2 = req.Item1;
+                cookies = req.Item2;
 
                 if (!res2.Success)
                 {
@@ -534,17 +557,21 @@ namespace DCAdapter
             return info;
         }
         
-        private GallogArticleDeleteParameters GetDeleteArticleInfo(string url)
+        private async Task<GallogArticleDeleteParameters> GetDeleteArticleInfo(string url)
         {
-            string galHtml = HttpRequest.RequestDeleteGallogArticlePage(url, user_id, ref cookies);
+            Tuple<string, CookieContainer> req = await HttpRequest.RequestDeleteGallogArticlePage(url, user_id, cookies);
+            string galHtml = req.Item1;
+            cookies = req.Item2;
             GallogArticleDeleteParameters retParams = HtmlParser.GetDeleteGallogArticleParameters(galHtml);
             retParams.UserId = user_id;
             return retParams;
         }
         
-        private GallogCommentDeleteParameters GetDeleteCommentInfo(string url)
+        private async Task<GallogCommentDeleteParameters> GetDeleteCommentInfo(string url)
         {
-            string galHtml = HttpRequest.RequestDeleteGallogCommentPage(url, user_id, ref cookies);
+            Tuple<string, CookieContainer> req = await HttpRequest.RequestDeleteGallogCommentPage(url, user_id, cookies);
+            string galHtml = req.Item1;
+            cookies = req.Item2;
             GallogCommentDeleteParameters retParams = HtmlParser.GetDeleteGallogCommentParameters(galHtml);
             retParams.UserId = user_id;
             return retParams;

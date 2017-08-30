@@ -8,7 +8,6 @@ namespace DCCleaner
     public partial class Frm_Login : Form
     {
         DCConnector connector;
-        Thread loginThread;
 
         public Frm_Login()
         {
@@ -18,7 +17,7 @@ namespace DCCleaner
             connector = new DCConnector();
         }
 
-        private void btn_Login_Click(object sender, EventArgs e)
+        private async void btn_Login_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(tb_ID.Text))
             {
@@ -33,59 +32,41 @@ namespace DCCleaner
                 return;
             }
 
-            if(loginThread != null && loginThread.IsAlive)
-            {
-                return;
-            }
-
             string id = tb_ID.Text.Trim();
             string pw = tb_PW.Text.Trim();
 
             btn_Login.Enabled = false;
             btn_NoAccn.Enabled = false;
-            
-            loginThread = new Thread(new ThreadStart(delegate ()
-            {
-                bool result = false;
 
-                try
-                {
-                    result = connector.LoginDCInside(id, pw);
-                }
-                catch(ThreadAbortException) { throw; }
-                catch
-                {
-                    this.Invoke(new Action(() =>
-                    {
-                        btn_Login.Enabled = true;
-                        btn_NoAccn.Enabled = true;
-                        this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
-                    }));
-
-                    return;
-                }
-
-                this.Invoke(new Action(() =>
-                {
-                    if (result)
-                    {
-                        Frm_Cleaner cleaner = new Frm_Cleaner(this.connector);
-                        cleaner.FormClosed += (s, argv) => this.Close();
-                        this.Hide();
-                        cleaner.Show();
-                    }
-                    else
-                    {
-                        btn_Login.Enabled = true;
-                        btn_NoAccn.Enabled = true;
-                        lbl_Error.Text = connector.LoginErrorMessage;
-                    }
-                }));
-            }));
-
+            bool result = false;
             this.lbl_Error.Text = "로그인중입니다.";
 
-            loginThread.Start();
+            try
+            {
+                result = await connector.LoginDCInside(id, pw);
+            }
+            catch
+            {
+                btn_Login.Enabled = true;
+                btn_NoAccn.Enabled = true;
+                this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
+
+                return;
+            }
+
+            if (result)
+            {
+                Frm_Cleaner cleaner = new Frm_Cleaner(this.connector);
+                cleaner.FormClosed += (s, argv) => this.Close();
+                this.Hide();
+                cleaner.Show();
+            }
+            else
+            {
+                btn_Login.Enabled = true;
+                btn_NoAccn.Enabled = true;
+                lbl_Error.Text = connector.LoginErrorMessage;
+            }
         }
 
         private void btn_NoAccn_Click(object sender, EventArgs e)
@@ -110,23 +91,6 @@ namespace DCCleaner
             {
                 btn_Login.PerformClick();
             }
-        }
-
-        private void ExitForm()
-        {
-            if (this.loginThread != null && this.loginThread.IsAlive)
-            {
-                this.loginThread.Abort();
-            }
-            else
-            {
-                this.loginThread = null;
-            }
-        }
-
-        private void Frm_Login_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            ExitForm();
         }
     }
 }

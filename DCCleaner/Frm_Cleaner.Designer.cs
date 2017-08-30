@@ -558,7 +558,6 @@
             this.Controls.Add(this.ststp_Status);
             this.Name = "Frm_Cleaner";
             this.Text = "디시 클리너";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Frm_Cleaner_FormClosing);
             this.Load += new System.EventHandler(this.Frm_Cleaner_Load);
             this.tlp_CleanerSeprator.ResumeLayout(false);
             this.gb_CommentGroup.ResumeLayout(false);
