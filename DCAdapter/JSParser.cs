@@ -9,7 +9,7 @@ namespace DCAdapter
 {
     class JSParser
     {
-        internal static void ParseAdditionalDeleteParameter(string script, GalleryType gallType, out string encCode, out string name, out string value)
+        internal static void ParseDeleteGalleryArticleParameter(string script, GalleryType gallType, out string encCode, out string name, out string value)
         {
             name = null;
             value = null;
@@ -19,7 +19,7 @@ namespace DCAdapter
             Match encData = Regex.Match(script, "var _r = _d\\(\'(.*)\'\\)");
 #else
             Match encData = null;
-            throw new Exception("스크립트 파싱에 실패하였습니다.");
+            throw new Exception("알 수 없는 오류가 발생했습니다.");
 #endif
             if (encData.Success)
             {
@@ -28,7 +28,7 @@ namespace DCAdapter
             else
             {
                 if(gallType == GalleryType.Normal)
-                    throw new Exception("스크립트 파싱에 실패하였습니다.");
+                    throw new Exception("자바스크립트 파싱에 실패하였습니다.");
             }
 
             Match frmData = Regex.Match(script, "formData \\+= \"&(.*)=(.*)\";");
@@ -38,7 +38,22 @@ namespace DCAdapter
                 value = frmData.Groups[2].Value;
             }
             else
+                throw new Exception("자바스크립트 파싱에 실패하였습니다.");
+        }
+
+        internal static Dictionary<string, string> ParseLoginParameters(string script)
+        {
+            Dictionary<string, string> retVal = new Dictionary<string, string>();
+
+            Match frmData = Regex.Match(script, "name:\"(.*?)\", value:\"(.*?)\"");
+            if (frmData.Success)
+            {
+                retVal.Add(frmData.Groups[1].Value, frmData.Groups[2].Value);
+            }
+            else
                 throw new Exception("스크립트 파싱에 실패하였습니다.");
+
+            return retVal;
         }
     }
 }

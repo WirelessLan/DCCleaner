@@ -60,6 +60,7 @@
     <Compile Include="GalleryType.cs" />
     <Compile Include="HtmlParser.cs" />
     <Compile Include="HttpRequest.cs" />
+    <Compile Include="LoginInfo.cs" />
     <Compile Include="LoginStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utility.cs" />

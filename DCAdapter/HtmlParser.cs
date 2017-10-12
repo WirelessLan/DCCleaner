@@ -116,7 +116,7 @@ namespace DCAdapter
                 throw new Exception("알 수 없는 오류입니다.");
             }
             // 글 삭제시 실행되는 스크립트의 추가 값을 가져옴
-            JSParser.ParseAdditionalDeleteParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
+            JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
 
             delete_Params.Add(jsParamName, jsParamValue);
             if(gallType == GalleryType.Normal)
@@ -170,7 +170,7 @@ namespace DCAdapter
             {
                 throw new Exception("알 수 없는 오류입니다.");
             }
-            JSParser.ParseAdditionalDeleteParameter(jsScript, gallType,  out jsEncCode, out jsParamName, out jsParamValue);
+            JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType,  out jsEncCode, out jsParamName, out jsParamValue);
 
             delete_Params.Add(jsParamName, jsParamValue);
             if (gallType == GalleryType.Normal)
@@ -425,13 +425,21 @@ namespace DCAdapter
             Dictionary<string, string> retParams = new Dictionary<string, string>();
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(src);
-                        
-            foreach(HtmlNode node in doc.DocumentNode.SelectNodes("//input[contains(@type, 'hidden')]"))
+
+            string jsScript = "";
+
+            foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
             {
-                retParams.Add(node.Attributes["name"].Value, node.Attributes["value"].Value);
+                jsScript += scriptNode.InnerHtml;
+            }
+            
+            if (jsScript == "")
+            {
+                throw new Exception("로그인 파라미터를 불러오는데 실패하였습니다.");
             }
 
-            return retParams;
+            // 로그인시 필요한 파라미터 정보들을 가져옴
+            return JSParser.ParseLoginParameters(jsScript);
         }
     }
 }

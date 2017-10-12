@@ -10,26 +10,30 @@ using System.Threading.Tasks;
 
 namespace DCAdapter
 {
-    class HttpRequest
+    partial class DCConnector
     {
         /// <summary>
         /// 서버와의 통신에 사용되는 Fake User-Agent
         /// </summary>
         readonly static string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.86 Safari/537.36";
         
-        internal async static Task<Tuple<LoginStatus, CookieContainer>> RequestLogin(string id, string pw, LoginStatus status, CookieContainer cookies)
+        private async Task<LoginStatus> RequestLogin(string id, string pw)
         {
             string gallUrl = "http://gall.dcinside.com";
+            LoginStatus status = new LoginStatus();
 
             // 로그인 페이지에 한번은 접속해야 정상 동작함
-            Dictionary<string, string> LoginParams = await RequestLoginPage(gallUrl, cookies);
+            Dictionary<string, string> LoginParams = await RequestLoginSource(gallUrl);
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/member_check.php");
+
+            request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
             request.CookieContainer = cookies;
             request.UserAgent = UserAgent;
             request.Proxy = null;
+            request.Headers.Add("Upgrade-Insecure-Requests", "1");
             request.Referer = "https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl);
 
             using (Stream stream = await request.GetRequestStreamAsync())
@@ -62,6 +66,8 @@ namespace DCAdapter
                                 status = LoginStatus.PasswordError;
                             else if (result.Contains("아이디 또는 비밀번호가 잘못되었습니다."))
                                 status = LoginStatus.ErrorBoth;
+                            else if (result.Contains("잘못된 접근입니다"))
+                                status = LoginStatus.Unknown;
                             else
                                 status = LoginStatus.Success;
                         }
@@ -73,10 +79,36 @@ namespace DCAdapter
                 }
             }
 
-            return new Tuple<LoginStatus, CookieContainer>(status, cookies);
+            return status;
         }
-        
-        internal async static Task<Tuple<string, CookieContainer>> RequestGallogHtml(string id, CookieContainer cookies)
+
+        private async Task<Dictionary<string, string>> RequestLoginSource(string gallUrl)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl));
+
+            request.Method = "GET";
+            request.Referer = gallUrl;
+            request.CookieContainer = cookies;
+            request.UserAgent = UserAgent;
+            request.Proxy = null;
+
+            using (WebResponse response = await request.GetResponseAsync())
+            {
+                if ((response as HttpWebResponse).StatusCode == HttpStatusCode.OK)
+                {
+                    using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                    {
+                        string result = reader.ReadToEnd();
+
+                        return HtmlParser.GetLoginParameter(result);
+                    }
+                }
+                else
+                    throw new Exception("알 수 없는 오류입니다.");
+            }
+        }
+
+        private async Task<string> RequestGallogMainSource(string id)
         {
             const string _gallogURL = "http://gallog.dcinside.com/";
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_gallogURL + id);
@@ -96,7 +128,7 @@ namespace DCAdapter
                         {
                             string result = readStream.ReadToEnd();
 
-                            return new Tuple<string, CookieContainer>(result, cookies);
+                            return result;
                         }
                     }
                 }
@@ -105,7 +137,7 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
         
-        internal async static Task<Tuple<string, CookieContainer>> RequestWholePage(string user_id, int page, int cPage, CookieContainer cookies)
+        private async Task<string> RequestGallogMainListSource(string user_id, int page, int cPage)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_mainGallog.php";
             string referer = "http://gallog.dcinside.com/" + user_id;
@@ -132,7 +164,7 @@ namespace DCAdapter
                         using (StreamReader reader = new StreamReader(stream))
                         {
                             string result = reader.ReadToEnd();
-                            return new Tuple<string, CookieContainer>(result, cookies);
+                            return result;
                         }
                     }
                 }
@@ -141,8 +173,8 @@ namespace DCAdapter
             throw new Exception("갤로그 글 리스트를 불러올 수 없습니다.");
         }
         
-        internal async static Task<Tuple<string, int, int, CookieContainer>>
-            RequestGalleryNickNameSearchPage(string gall_id, GalleryType gallType, string nickname, int searchPos, int searchPage, CookieContainer cookies)
+        private async Task<Tuple<string, int, int>>
+            RequestGalleryNicknameSearchSource(string gall_id, GalleryType gallType, string nickname, int searchPos, int searchPage)
         {
             string searchPath = null;
             string basePath = null;
@@ -196,7 +228,7 @@ namespace DCAdapter
                                 throw new Exception("알 수 없는 오류입니다.");
                             }
 
-                            return new Tuple<string, int, int, CookieContainer>(result, searchPos, searchPage, cookies);
+                            return new Tuple<string, int, int>(result, searchPos, searchPage);
                         }
                     }
                 }
@@ -205,11 +237,9 @@ namespace DCAdapter
             throw new Exception("알 수 없는 오류입니다.");
         }
         
-        internal async static Task<Tuple<DeleteResult, CookieContainer>> RequestDeleteArticle(GalleryArticleDeleteParameters info, GalleryType gallType, int delay, CookieContainer cookies)
+        private async Task<DeleteResult> RequestDeleteGalleryArticle(GalleryArticleDeleteParameters info, GalleryType gallType, int delay)
         {
-            Tuple<string, CookieContainer> reqPageHtml = await RequestDeleteAritclePage(info.GalleryId, info.ArticleID, null, gallType, cookies);
-            string pageHtml = reqPageHtml.Item1;
-            cookies = reqPageHtml.Item2;
+            string pageHtml = await RequestDeleteGalleryArticleSource(info.GalleryId, info.ArticleID, null, gallType);
             Dictionary<string, string> delete_params = null;
             string lately_gallery = null;
             
@@ -219,7 +249,7 @@ namespace DCAdapter
             }
             catch (Exception e)
             {
-                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, e.Message), cookies);
+                return new DeleteResult(false, e.Message);
             }
 
             if(gallType == GalleryType.Normal)
@@ -288,29 +318,27 @@ namespace DCAdapter
 
                             if(result == "true||" + info.GalleryId)
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(true, ""), cookies);
+                                return new DeleteResult(true, "");
                             }
                             else if(result.StartsWith("false||"))
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, result.Replace("false||", "")), cookies);
+                                return new DeleteResult(false, result.Replace("false||", ""));
                             }
                             else
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+                                return new DeleteResult(false, "알 수 없는 오류입니다.");
                             }
                         }
                     }
                 }
             }
 
-            return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+            return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        internal async static Task<Tuple<DeleteResult, CookieContainer>> RequestDeleteFlowArticle(GalleryArticleDeleteParameters delParam, GalleryType gallType, int delay, CookieContainer cookies)
+        private async Task<DeleteResult> RequestDeleteGalleryFlowArticle(GalleryArticleDeleteParameters delParam, GalleryType gallType, int delay)
         {
-            Tuple<string, CookieContainer> reqDeleteArticlePage = await RequestDeleteAritclePage(delParam.GalleryId, delParam.ArticleID, null, gallType, cookies);
-            string pageHtml = reqDeleteArticlePage.Item1;
-            cookies = reqDeleteArticlePage.Item2;
+            string pageHtml = await RequestDeleteGalleryArticleSource(delParam.GalleryId, delParam.ArticleID, null, gallType);
             Dictionary<string, string> delete_params = null;
             string lately_gallery = null;
 
@@ -320,7 +348,7 @@ namespace DCAdapter
             }
             catch (Exception e)
             {
-                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, e.Message), cookies);
+                return new DeleteResult(false, e.Message);
             }
             
             if (gallType == GalleryType.Normal)
@@ -384,33 +412,31 @@ namespace DCAdapter
                             if (result.StartsWith("true||"))
                             {
                                 if (gallType == GalleryType.Normal)
-                                    return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(true, ""), cookies);
+                                    return new DeleteResult(true, "");
                                 else
-                                    return await RequestDeleteMinorFlowArticle(delParam, result.Replace("true||", ""), cookies);
+                                    return await RequestDeleteMinorGalleryFlowArticle(delParam, result.Replace("true||", ""));
                             }
                             else if (result == "false||비밀번호 인증에 실패하였습니다. 다시 시도해주세요" || 
                                 result == "false|| 비밀번호가 맞지 않습니다. 다시 시도해주세요" ||
                                 result == "false||비밀번호가 잘못되었습니다. 다시 시도해주세요")
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "비밀번호가 다릅니다."), cookies);
+                                return new DeleteResult(false, "비밀번호가 다릅니다.");
                             }
                             else
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+                                return new DeleteResult(false, "알 수 없는 오류입니다.");
                             }
                         }
                     }
                 }
             }
 
-            return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+            return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async static Task<Tuple<DeleteResult, CookieContainer>> RequestDeleteMinorFlowArticle(GalleryArticleDeleteParameters delParam, string key, CookieContainer cookies)
+        private async Task<DeleteResult> RequestDeleteMinorGalleryFlowArticle(GalleryArticleDeleteParameters delParam, string key)
         {
-            Tuple<string, CookieContainer> reqDeleteArticlePage = await RequestDeleteAritclePage(delParam.GalleryId, delParam.ArticleID, key, GalleryType.Minor, cookies);
-            string pageHtml = reqDeleteArticlePage.Item1;
-            cookies = reqDeleteArticlePage.Item2;
+            string pageHtml = await RequestDeleteGalleryArticleSource(delParam.GalleryId, delParam.ArticleID, key, GalleryType.Minor);
             Dictionary<string, string> delete_params = null;
             string nulString = null;
 
@@ -420,7 +446,7 @@ namespace DCAdapter
             }
             catch (Exception e)
             {
-                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, e.Message), cookies);
+                return new DeleteResult(false, e.Message);
             }
 
             string _reqURL = "http://gall.dcinside.com/mgallery/forms/delete_submit";
@@ -462,41 +488,39 @@ namespace DCAdapter
 
                             if (result.StartsWith("true||" + delParam.GalleryId))
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(true, ""), cookies);
+                                return new DeleteResult(true, "");
                             }
                             else if (result == "false||비밀번호 인증에 실패하였습니다. 다시 시도해주세요" ||
                                 result == "false|| 비밀번호가 맞지 않습니다. 다시 시도해주세요" ||
                                 result == "false||비밀번호가 잘못되었습니다. 다시 시도해주세요")
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "비밀번호가 다릅니다."), cookies);
+                                return new DeleteResult(false, "비밀번호가 다릅니다.");
                             }
                             else
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+                                return new DeleteResult(false, "알 수 없는 오류입니다.");
                             }
                         }
                     }
                 }
             }
 
-            return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+            return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        internal async static Task<Tuple<DeleteResult, CookieContainer>> RequestDeleteComment(GalleryCommentDeleteParameters param, CookieContainer cookies)
+        private async Task<DeleteResult> RequestDeleteGalleryComment(GalleryCommentDeleteParameters param)
         {
-            Tuple<string, CookieContainer> reqPage = await RequestArticleCommentViewPage(param.GalleryId, param.ArticleId, cookies);
-            string pageHtml = reqPage.Item1;
-            cookies = reqPage.Item2;
+            string commentPageHtml = await RequestGalleryCommentViewSource(param.GalleryId, param.ArticleId);
             string ci_t = null, check7 = null;
             
             try
             {
-                HtmlParser.GetDeleteCommentParameters(pageHtml, out check7);
+                HtmlParser.GetDeleteCommentParameters(commentPageHtml, out check7);
                 ci_t = cookies.GetCookies(new Uri("http://gall.dcinside.com/"))["ci_c"].Value;
             }
             catch (Exception e)
             {
-                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, e.Message), cookies);
+                return new DeleteResult(false, e.Message);
             }
 
             const string _reqURL = "http://gall.dcinside.com/forms/comment_delete_submit";
@@ -534,25 +558,25 @@ namespace DCAdapter
 
                             if (result == "")
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(true, ""), cookies);
+                                return new DeleteResult(true, "");
                             }
                             else if(result == "false||댓글내역이 없습니다")
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "이미 삭제된 리플입니다."), cookies);
+                                return new DeleteResult(false, "이미 삭제된 리플입니다.");
                             }
                             else
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+                                return new DeleteResult(false, "알 수 없는 오류입니다.");
                             }
                         }
                     }
                 }
             }
 
-            return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+            return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        internal async static Task<Tuple<DeleteResult, CookieContainer>> RequestDeleteGallogArticle(GallogArticleDeleteParameters param, int delay, CookieContainer cookies)
+        private async Task<DeleteResult> RequestDeleteGallogArticle(GallogArticleDeleteParameters param, int delay)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteArticle.php";
             const string host = "gallog.dcinside.com";
@@ -592,21 +616,21 @@ namespace DCAdapter
                             // 성공
                             if (result.Contains("GidMgr.resetGalleryData(2);"))
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(true, ""), cookies);
+                                return new DeleteResult(true, "");
                             }
                             else
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+                                return new DeleteResult(false, "알 수 없는 오류입니다.");
                             }
                         }
                     }
                 }
             }
 
-            return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+            return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        internal async static Task<Tuple<DeleteResult, CookieContainer>> RequestDeleteGallogComment(GallogCommentDeleteParameters param, int delay, CookieContainer cookies)
+        private async Task<DeleteResult> RequestDeleteGallogComment(GallogCommentDeleteParameters param, int delay)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteRepOk.php";
             const string host = "gallog.dcinside.com";
@@ -646,47 +670,21 @@ namespace DCAdapter
                             // 성공
                             if(result.Contains("GidMgr.resetGalleryData(2);"))
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(true, ""), cookies);
+                                return new DeleteResult(true, "");
                             }
                             else
                             {
-                                return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+                                return new DeleteResult(false, "알 수 없는 오류입니다.");
                             }
                         }
                     }
                 }
             }
 
-            return new Tuple<DeleteResult, CookieContainer>(new DeleteResult(false, "알 수 없는 오류입니다."), cookies);
+            return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async static Task<Dictionary<string, string>> RequestLoginPage(string gallUrl, CookieContainer cookies)
-        {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl));
-
-            request.Method = "GET";
-            request.Referer = gallUrl;
-            request.CookieContainer = cookies;
-            request.UserAgent = UserAgent;
-            request.Proxy = null;
-
-            using (WebResponse response = await request.GetResponseAsync())
-            {
-                if ((response as HttpWebResponse).StatusCode == HttpStatusCode.OK)
-                {
-                    using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-                    {
-                        string result = reader.ReadToEnd();
-
-                        return HtmlParser.GetLoginParameter(result);
-                    }
-                }
-                else
-                    throw new Exception("알 수 없는 오류입니다.");
-            }
-        }
-        
-        private async static Task<Tuple<string, CookieContainer>> RequestArticleCommentViewPage(string gallid, string articleid, CookieContainer cookies)
+        private async Task<string> RequestGalleryCommentViewSource(string gallid, string articleid)
         {
             const string _reqURL = "http://gall.dcinside.com/board/comment_view/";
             string referer = "http://gall.dcinside.com/board/lists/?id=" + gallid;
@@ -711,7 +709,7 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            return new Tuple<string, CookieContainer>(result, cookies);
+                            return result;
                         }
                     }
                 }
@@ -720,7 +718,7 @@ namespace DCAdapter
             throw new Exception("글을 불러올 수 없습니다.");
         }
         
-        private async static Task<Tuple<string, CookieContainer>> RequestDeleteAritclePage(string gallId, string no, string key, GalleryType gallType, CookieContainer cookies)
+        private async Task<string> RequestDeleteGalleryArticleSource(string gallId, string no, string key, GalleryType gallType)
         {
             string _reqURL = null;
             string referer = null; 
@@ -765,7 +763,7 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            return new Tuple<string, CookieContainer>(result, cookies);
+                            return result;
                         }
                     }
                 }
@@ -807,7 +805,7 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
         
-        internal async static Task<Tuple<string, CookieContainer>> RequestDeleteGallogArticlePage(string url, string id, CookieContainer cookies)
+        private async Task<string> RequestDeleteGallogArticleSource(string url, string id)
         {
             string referer = "http://gallog.dcinside.com/inc/_mainGallog.php?gid=" + id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
@@ -830,7 +828,7 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            return new Tuple<string, CookieContainer>(result, cookies);
+                            return result;
                         }
                     }
                 }
@@ -872,7 +870,7 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
         
-        internal async static Task<Tuple<string, CookieContainer>> RequestDeleteGallogCommentPage(string url, string user_id, CookieContainer cookies)
+        private async Task<string> RequestDeleteGallogCommentSource(string url, string user_id)
         {
             string referer = "http://gallog.dcinside.com/inc/_mainGallog.php?gid=" + user_id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
@@ -895,7 +893,7 @@ namespace DCAdapter
                         {
                             string result = reader.ReadToEnd();
 
-                            return new Tuple<string, CookieContainer>(result, cookies);
+                            return result;
                         }
                     }
                 }

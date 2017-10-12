@@ -25,7 +25,7 @@ namespace DCCleaner
 
         private void Frm_Cleaner_Load(object sender, EventArgs e)
         {
-            if(!conn.IsLogin)
+            if(!conn.LoginInfo.IsLoggedIn)
             {
                 tc_CleanerTabContainer.SelectedTab = tp_SearchBase;
                 lbl_SearchBaseWarn.Text = "※ 주의 : 유동닉은 갤로그 기반 삭제 및 리플 삭제가 불가능합니다.";
@@ -514,7 +514,7 @@ namespace DCCleaner
                 return;
             }
 
-            if (e.TabPage == tp_GallogBase && !conn.IsLogin)
+            if (e.TabPage == tp_GallogBase && !conn.LoginInfo.IsLoggedIn)
             {
                 SetStatusMessage("유동닉은 갤로그 기반 삭제를 할 수 없습니다.");
                 e.Cancel = true;
@@ -640,7 +640,7 @@ namespace DCCleaner
             if (isBusy)
                 return;
 
-            if (!conn.IsLogin)
+            if (!conn.LoginInfo.IsLoggedIn)
             {
                 if (string.IsNullOrWhiteSpace(tb_DeletePassword.Text))
                 {
@@ -670,7 +670,7 @@ namespace DCCleaner
                 ArticleInfo res = null;
                 try
                 {
-                    if (!conn.IsLogin)
+                    if (!conn.LoginInfo.IsLoggedIn)
                         info.GalleryArticleDeleteParameters.Password = password;
                     res = await conn.DeleteArticle(info, gallType, false);
                 }
@@ -777,7 +777,7 @@ namespace DCCleaner
             if (isBusy)
                 return;
 
-            if (!conn.IsLogin)
+            if (!conn.LoginInfo.IsLoggedIn)
             {
                 if (string.IsNullOrWhiteSpace(tb_DeletePassword.Text))
                 {
@@ -800,7 +800,7 @@ namespace DCCleaner
 
             try
             {
-                if (!conn.IsLogin)
+                if (!conn.LoginInfo.IsLoggedIn)
                     target.GalleryArticleDeleteParameters.Password = password;
                 await conn.DeleteArticle(target, gallType, false);
             }

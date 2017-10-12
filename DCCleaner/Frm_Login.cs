@@ -43,7 +43,7 @@ namespace DCCleaner
 
             try
             {
-                result = await connector.LoginDCInside(id, pw);
+                result = await connector.Login(id, pw);
             }
             catch
             {
@@ -65,7 +65,7 @@ namespace DCCleaner
             {
                 btn_Login.Enabled = true;
                 btn_NoAccn.Enabled = true;
-                lbl_Error.Text = connector.LoginErrorMessage;
+                lbl_Error.Text = connector.LoginInfo.ErrorMessage;
             }
         }
 
