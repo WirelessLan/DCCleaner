@@ -15,7 +15,7 @@ namespace DCAdapter
         /// <summary>
         /// 서버와의 통신에 사용되는 Fake User-Agent
         /// </summary>
-        readonly static string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.86 Safari/537.36";
+        readonly static string UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36";
         
         private async Task<LoginStatus> RequestLogin(string id, string pw)
         {
