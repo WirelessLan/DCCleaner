@@ -22,15 +22,15 @@ namespace DCAdapter
         /// <summary>
         /// 글의 삭제 URL
         /// </summary>
-        public string DeleteURL;
+        public string DeleteUrl;
         /// <summary>
         /// 실제 갤러리에서 삭제 결과 여부
         /// </summary>
-        public bool ActualDelete = false;
+        public bool IsGalleryDeleted = false;
         /// <summary>
         /// 갤로그에서 삭제 결과 여부
         /// </summary>
-        public bool GallogDelete = false;
+        public bool IsGallogDeleted = false;
         /// <summary>
         /// 삭제 메시지. 삭제 에러 발생시 사용.
         /// </summary>
