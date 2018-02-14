@@ -218,7 +218,7 @@ namespace DCAdapter
 
                     string url = Utility.GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);
 
-                    coms.Add(new CommentInfo() { Name = name, Content = content, Date = date, DeleteUrl = url });
+                    coms.Add(new CommentInfo() { Name = name, Content = content, Date = date, DeleteURL = url });
                 }
             }
 
@@ -241,7 +241,7 @@ namespace DCAdapter
                     string url = Utility.GetAbsoulteURL(node.Attributes["onClick"].Value);
                     string date = node.ParentNode.InnerText;
 
-                    arts.Add(new ArticleInfo() { Title = title, DeleteUrl = url, Date = date });
+                    arts.Add(new ArticleInfo() { Title = title, DeleteURL = url, Date = date });
                 }
             }
 
@@ -412,7 +412,7 @@ namespace DCAdapter
                     GalleryId = gall_id,
                     ArticleID = articleNo
                 };
-                info.DeleteUrl = deleteBasePath + "&no=" + articleNo;
+                info.DeleteURL = deleteBasePath + "&no=" + articleNo;
 
                 searchedList.Add(info);
             }
