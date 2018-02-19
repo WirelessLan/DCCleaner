@@ -24,7 +24,18 @@ namespace DCAdapter
             LoginStatus status = new LoginStatus();
 
             // 로그인 페이지에 한번은 접속해야 정상 동작함
-            Dictionary<string, string> LoginParams = await RequestLoginSource(gallUrl);
+            Dictionary<string, string> LoginParams = null;
+
+            try
+            {
+                LoginParams = await RequestLoginSource(gallUrl);
+            }
+            catch(Exception ex)
+            {
+                if (ex.Message == "로그인 되었습니다")
+                    return LoginStatus.Success;
+                throw;
+            }
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/member_check.php");
 
@@ -110,6 +121,9 @@ namespace DCAdapter
                         string result = reader.ReadToEnd();
                         if ((response as HttpWebResponse).Cookies["userAgent"] != null)
                             UserAgent = HttpUtility.UrlDecode((response as HttpWebResponse).Cookies["userAgent"].Value);
+
+                        if (result.Contains("로그인 되었습니다"))
+                            throw new Exception("로그인 되었습니다");
 
                         return HtmlParser.GetLoginParameter(result);
                     }
