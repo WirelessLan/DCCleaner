@@ -17,7 +17,7 @@ namespace DCAdapter
         /// </summary>
         readonly static string UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36";
         
-        private async Task<LoginStatus> RequestLogin(string id, string pw, bool redirect)
+        private async Task<LoginStatus> RequestLogin(string id, string pw)
         {
             string gallUrl = "gallog";
             LoginStatus status = new LoginStatus();
@@ -34,7 +34,7 @@ namespace DCAdapter
             request.UserAgent = UserAgent;
             request.Proxy = null;
             request.Headers.Add("Upgrade-Insecure-Requests", "1");
-            request.AllowAutoRedirect = redirect;
+            request.AllowAutoRedirect = false;
             request.Referer = "https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl);
 
             using (Stream stream = await request.GetRequestStreamAsync())
@@ -78,7 +78,7 @@ namespace DCAdapter
                 {
                     RequestSSO(response.Headers["Location"]);
 
-                    return await RequestLogin(id, pw, true);
+                    return await RequestLogin(id, pw);
                 }
                 else
                 {

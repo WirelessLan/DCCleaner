@@ -44,7 +44,7 @@ namespace DCAdapter
                 return false;
             }
 
-            loginInfo.Status = await RequestLogin(id, pw, false);
+            loginInfo.Status = await RequestLogin(id, pw);
 
             if (loginInfo.Status == LoginStatus.Success)
             {
