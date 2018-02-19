@@ -44,7 +44,7 @@ namespace DCAdapter
                 return false;
             }
 
-            loginInfo.Status = await RequestLogin(id, pw);
+            loginInfo.Status = await RequestLogin(id, pw, false);
 
             if (loginInfo.Status == LoginStatus.Success)
             {
@@ -314,12 +314,12 @@ namespace DCAdapter
             GallogArticleDeleteParameters delParams = null;
             try
             {
-                delParams = await this.GetDeleteArticleInfo(info.DeleteURL);
+                delParams = await this.GetDeleteArticleInfo(info.DeleteUrl);
             }
             catch(Exception e)
             {
-                info.ActualDelete = false;
-                info.GallogDelete = false;
+                info.IsGalleryDeleted = false;
+                info.IsGallogDeleted = false;
                 info.DeleteMessage = e.Message;
 
                 return info;
@@ -352,8 +352,8 @@ namespace DCAdapter
             }
             catch (Exception ex)
             {
-                info.ActualDelete = false;
-                info.GallogDelete = false;
+                info.IsGalleryDeleted = false;
+                info.IsGallogDeleted = false;
                 info.DeleteMessage = "갤러리의 글을 지우는데 실패하였습니다 - [" + ex.Message + "]";
 
                 return info;
@@ -361,8 +361,8 @@ namespace DCAdapter
 
             if (!res1.Success && res1.ErrorMessage != "이미 삭제된 글입니다.")
             {
-                info.ActualDelete = false;
-                info.GallogDelete = false;
+                info.IsGalleryDeleted = false;
+                info.IsGallogDeleted = false;
                 info.DeleteMessage = "갤러리의 글을 지우는데 실패하였습니다 - [" + res1.ErrorMessage + "]";
 
                 return info;
@@ -380,8 +380,8 @@ namespace DCAdapter
                 }
                 catch (Exception ex)
                 {
-                    info.ActualDelete = true;
-                    info.GallogDelete = false;
+                    info.IsGalleryDeleted = true;
+                    info.IsGallogDeleted = false;
                     info.DeleteMessage = "갤로그의 글을 지우는데 실패하였습니다 - [" + ex.Message + "]";
 
                     return info;
@@ -389,16 +389,16 @@ namespace DCAdapter
 
                 if (!res2.Success)
                 {
-                    info.ActualDelete = true;
-                    info.GallogDelete = false;
+                    info.IsGalleryDeleted = true;
+                    info.IsGallogDeleted = false;
                     info.DeleteMessage = "갤로그의 글을 지우는데 실패하였습니다 - [" + res2.ErrorMessage + "]";
 
                     return info;
                 }
             }
 
-            info.ActualDelete = true;
-            info.GallogDelete = true;
+            info.IsGalleryDeleted = true;
+            info.IsGallogDeleted = true;
             return info;
         }
         
@@ -410,12 +410,12 @@ namespace DCAdapter
 
             try
             {
-                delParams = await this.GetDeleteCommentInfo(info.DeleteURL);
+                delParams = await this.GetDeleteCommentInfo(info.DeleteUrl);
             }
             catch (Exception e)
             {
-                info.ActualDelete = false;
-                info.GallogDelete = false;
+                info.IsGalleryDeleted = false;
+                info.IsGallogDeleted = false;
                 info.DeleteMessage = e.Message;
 
                 return info;
@@ -447,8 +447,8 @@ namespace DCAdapter
             }
             catch (Exception ex)
             {
-                info.ActualDelete = false;
-                info.GallogDelete = false;
+                info.IsGalleryDeleted = false;
+                info.IsGallogDeleted = false;
                 info.DeleteMessage = "갤러리의 리플을 지우는데 실패하였습니다 - [" + ex.Message + "]";
 
                 return info;
@@ -456,8 +456,8 @@ namespace DCAdapter
 
             if (!res1.Success && res1.ErrorMessage != "이미 삭제된 리플입니다.")
             {
-                info.ActualDelete = false;
-                info.GallogDelete = false;
+                info.IsGalleryDeleted = false;
+                info.IsGallogDeleted = false;
                 info.DeleteMessage = "갤러리의 리플을 지우는데 실패하였습니다 - [" + res1.ErrorMessage + "]";
 
                 return info;
@@ -475,8 +475,8 @@ namespace DCAdapter
                 }
                 catch (Exception ex)
                 {
-                    info.ActualDelete = true;
-                    info.GallogDelete = false;
+                    info.IsGalleryDeleted = true;
+                    info.IsGallogDeleted = false;
                     info.DeleteMessage = "갤로그의 리플을 지우는데 실패하였습니다 - [" + ex.Message + "]";
 
                     return info;
@@ -484,16 +484,16 @@ namespace DCAdapter
 
                 if (!res2.Success)
                 {
-                    info.ActualDelete = true;
-                    info.GallogDelete = false;
+                    info.IsGalleryDeleted = true;
+                    info.IsGallogDeleted = false;
                     info.DeleteMessage = "갤로그의 리플을 지우는데 실패하였습니다 - [" + res2.ErrorMessage + "]";
 
                     return info;
                 }
             }
 
-            info.ActualDelete = true;
-            info.GallogDelete = true;
+            info.IsGalleryDeleted = true;
+            info.IsGallogDeleted = true;
             info.DeleteMessage = "";
 
             return info;

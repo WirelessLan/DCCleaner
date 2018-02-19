@@ -56,11 +56,14 @@ namespace DCCleaner
             }
             catch (Exception ex)
             {
+                isBusy = false;
                 SetStatusMessage(ex.Message);
+                return;
             }
             
             if (articleList == null)
             {
+                isBusy = false;
                 SetStatusMessage("내가 쓴 글 목록을 불러올 수 없습니다.");
                 return;
             }
@@ -91,12 +94,14 @@ namespace DCCleaner
             }
             catch (Exception ex)
             {
+                isBusy = false;
                 SetStatusMessage(ex.Message);
                 return;
             }
 
             if (commentList == null)
             {
+                isBusy = false;
                 SetStatusMessage("내가 쓴 리플 목록을 불러올 수 없습니다.");
                 return;
             }
@@ -156,25 +161,25 @@ namespace DCCleaner
                     continue;
                 }
 
-                if (!res.ActualDelete || (both && !res.GallogDelete))
+                if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
                     for (int j = 0; j < 1; j++)
                     {
                         // 실패시, Sleep 후 1회 재시도
                         await Task.Delay(100);
                         res = await conn.DeleteArticle(info, both);
-                        if (res.ActualDelete && (!both || res.GallogDelete))
+                        if (res.IsGalleryDeleted && (!both || res.IsGallogDeleted))
                             break;
                     }
 
                 // 재시도에도 삭제 실패했을 경우,
-                if (!res.ActualDelete || (both && !res.GallogDelete))
+                if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
                 {
                     rmIdx++;
                     continue;   // 무시
                 }
 
-                info.ActualDelete = res.ActualDelete;
-                info.GallogDelete = res.GallogDelete;
+                info.IsGalleryDeleted = res.IsGalleryDeleted;
+                info.IsGallogDeleted = res.IsGallogDeleted;
                 info.DeleteMessage = res.DeleteMessage;
 
                 articleList[rmIdx] = info;
@@ -243,25 +248,25 @@ namespace DCCleaner
                     continue;
                 }
 
-                if (!res.ActualDelete || (both && !res.GallogDelete))
+                if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
                     for (int j = 0; j < 1; j++)
                     {
                         // 실패시, Sleep 후 1회 재시도
                         await Task.Delay(100);
                         res = await conn.DeleteComment(info, both);
-                        if (res.ActualDelete && (!both || res.GallogDelete))
+                        if (res.IsGalleryDeleted && (!both || res.IsGallogDeleted))
                             break;
                     }
 
                 // 재시도에도 삭제 실패했을 경우,
-                if (!res.ActualDelete || (both && !res.GallogDelete))
+                if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
                 {
                     rmIdx++;
                     continue;   // 무시
                 }
 
-                info.ActualDelete = res.ActualDelete;
-                info.GallogDelete = res.GallogDelete;
+                info.IsGalleryDeleted = res.IsGalleryDeleted;
+                info.IsGallogDeleted = res.IsGallogDeleted;
                 info.DeleteMessage = res.DeleteMessage;
 
                 commentList[rmIdx] = info;
@@ -330,7 +335,7 @@ namespace DCCleaner
             }
 
             // 갤로그와 갤러리 둘다 삭제 되었을 경우
-            if (target.ActualDelete && target.GallogDelete)
+            if (target.IsGalleryDeleted && target.IsGallogDeleted)
             {
                 articleList.RemoveAt(selectedIdx);
 
@@ -341,7 +346,7 @@ namespace DCCleaner
             else
             {
                 string rmErrMsg = "";
-                if (!target.ActualDelete)
+                if (!target.IsGalleryDeleted)
                     rmErrMsg = "글을 삭제하는데 실패하였습니다. - 갤러리 삭제 실패";
                 else
                     rmErrMsg = "글을 삭제하는데 실패하였습니다. - 갤로그 삭제 실패";
@@ -399,7 +404,7 @@ namespace DCCleaner
             }
 
             // 갤로그와 갤러리 둘다 삭제 되었을 경우
-            if (target.ActualDelete && target.GallogDelete)
+            if (target.IsGalleryDeleted && target.IsGallogDeleted)
             {
                 commentList.RemoveAt(selectedIdx);
 
@@ -410,7 +415,7 @@ namespace DCCleaner
             else
             {
                 string rmErrMsg = "";
-                if (!target.ActualDelete)
+                if (!target.IsGalleryDeleted)
                     rmErrMsg = "리플을 삭제하는데 실패하였습니다. - 갤러리 삭제 실패";
                 else
                     rmErrMsg = "리플을 삭제하는데 실패하였습니다. - 갤로그 삭제 실패";
@@ -443,8 +448,8 @@ namespace DCCleaner
             int selectedIdx = dgv_ArticleList.SelectedRows[0].Index;
             ArticleInfo target = articleList[selectedIdx];
 
-            string msg = "갤러리 삭제 : " + (target.ActualDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
-                       + "갤로그 삭제 : " + (target.GallogDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
+            string msg = "갤러리 삭제 : " + (target.IsGalleryDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
+                       + "갤로그 삭제 : " + (target.IsGallogDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
                        + "메시지 : " + (target.DeleteMessage);
 
             MessageBox.Show(msg, "글 삭제 정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -472,8 +477,8 @@ namespace DCCleaner
             int selectedIdx = dgv_CommentList.SelectedRows[0].Index;
             CommentInfo target = commentList[selectedIdx];
 
-            string msg = "갤러리 삭제 : " + (target.ActualDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
-                       + "갤로그 삭제 : " + (target.GallogDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
+            string msg = "갤러리 삭제 : " + (target.IsGalleryDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
+                       + "갤로그 삭제 : " + (target.IsGallogDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
                        + "메시지 : " + (target.DeleteMessage);
 
             MessageBox.Show(msg, "리플 삭제 정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -681,25 +686,25 @@ namespace DCCleaner
                     continue;
                 }
 
-                if (!res.ActualDelete)
+                if (!res.IsGalleryDeleted)
                     for (int j = 0; j < 1; j++)
                     {
                         // 실패시, Sleep 후 1회 재시도
                         await Task.Delay(100);
                         res = await conn.DeleteArticle(info, gallType, false);
-                        if (res.ActualDelete)
+                        if (res.IsGalleryDeleted)
                             break;
                     }
 
                 // 재시도에도 삭제 실패했을 경우,
-                if (!res.ActualDelete)
+                if (!res.IsGalleryDeleted)
                 {
                     rmIdx++;
                     continue;   // 무시
                 }
 
-                info.ActualDelete = res.ActualDelete;
-                info.GallogDelete = res.GallogDelete;
+                info.IsGalleryDeleted = res.IsGalleryDeleted;
+                info.IsGallogDeleted = res.IsGallogDeleted;
                 info.DeleteMessage = res.DeleteMessage;
 
                 searchedList[rmIdx] = info;
@@ -738,7 +743,7 @@ namespace DCCleaner
             int selectedIdx = dgv_SearchArticle.SelectedRows[0].Index;
             ArticleInfo target = searchedList[selectedIdx];
 
-            string msg = "상태 : " + (target.ActualDelete ? "삭제됨" : "삭제안됨") + Environment.NewLine
+            string msg = "상태 : " + (target.IsGalleryDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
                        + "메시지 : " + (target.DeleteMessage);
 
             MessageBox.Show(msg, "글 삭제 정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -810,7 +815,7 @@ namespace DCCleaner
             }
 
             // 갤로그와 갤러리 둘다 삭제 되었을 경우
-            if (target.ActualDelete)
+            if (target.IsGalleryDeleted)
             {
                 searchedList.RemoveAt(selectedIdx);
 
@@ -824,7 +829,7 @@ namespace DCCleaner
             else
             {
                 string rmErrMsg = "";
-                if (!target.ActualDelete)
+                if (!target.IsGalleryDeleted)
                     rmErrMsg = "글을 삭제하는데 실패하였습니다.";
 
                 SetStatusMessage(rmErrMsg);
