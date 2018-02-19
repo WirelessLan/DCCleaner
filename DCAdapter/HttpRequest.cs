@@ -15,11 +15,12 @@ namespace DCAdapter
         /// <summary>
         /// 서버와의 통신에 사용되는 Fake User-Agent
         /// </summary>
-        readonly static string UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36";
+        static string UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36";
         
-        private async Task<LoginStatus> RequestLogin(string id, string pw, bool redirect = false)
+        private async Task<LoginStatus> RequestLogin(string id, string pw, bool retry = true)
         {
             string gallUrl = "gallog";
+            string gallogUrl = "http://gallog.dcinside.com/" + id;
             LoginStatus status = new LoginStatus();
 
             // 로그인 페이지에 한번은 접속해야 정상 동작함
@@ -34,13 +35,12 @@ namespace DCAdapter
             request.UserAgent = UserAgent;
             request.Proxy = null;
             request.Headers.Add("Upgrade-Insecure-Requests", "1");
-            request.AllowAutoRedirect = redirect;
             request.Referer = "https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl);
 
             using (Stream stream = await request.GetRequestStreamAsync())
             using (StreamWriter streamWriter = new StreamWriter(stream))
             {
-                string param = "s_url=" + HttpUtility.UrlEncode(gallUrl) + "&tieup=&url=&user_id=" + id + "&password=" + pw + "&x=50&y=52&ssl_chk=on&";
+                string param = "s_url=" + HttpUtility.UrlEncode(gallUrl) + "&tieup=&url=&user_id=" + id + "&password=" + pw + "&x=0&y=0&ssl_chk=on&";
                 foreach (KeyValuePair<string, string> kv in LoginParams)
                 {
                     param += HttpUtility.UrlEncode(kv.Key) + "=" + HttpUtility.UrlEncode(kv.Value) + "&";
@@ -70,15 +70,16 @@ namespace DCAdapter
                             else if (result.Contains("잘못된 접근입니다"))
                                 status = LoginStatus.Unknown;
                             else
-                                status = LoginStatus.Success;
+                            {
+                                if (result.Contains(gallogUrl))
+                                    status = LoginStatus.Success;
+                                else if (retry)
+                                {
+                                    return await RequestLogin(id, pw, false);
+                                }
+                            }
                         }
-                    }                    
-                }
-                else if ((response as HttpWebResponse).StatusCode == HttpStatusCode.RedirectKeepVerb)
-                {
-                    RequestSSO(response.Headers["Location"]);
-
-                    return await RequestLogin(id, pw, true);
+                    }
                 }
                 else
                 {
@@ -107,6 +108,8 @@ namespace DCAdapter
                     using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                     {
                         string result = reader.ReadToEnd();
+                        if ((response as HttpWebResponse).Cookies["userAgent"] != null)
+                            UserAgent = HttpUtility.UrlDecode((response as HttpWebResponse).Cookies["userAgent"].Value);
 
                         return HtmlParser.GetLoginParameter(result);
                     }
@@ -114,20 +117,6 @@ namespace DCAdapter
                 else
                     throw new Exception("알 수 없는 오류입니다.");
             }
-        }
-
-        private async void RequestSSO(string url)
-        {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-
-            request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
-            request.Method = "GET";
-            request.ContentType = "application/x-www-form-urlencoded";
-            request.CookieContainer = cookies;
-            request.UserAgent = UserAgent;
-            request.Proxy = null;
-
-            await request.GetResponseAsync();
         }
 
         private async Task<string> RequestGallogMainSource(string id)
