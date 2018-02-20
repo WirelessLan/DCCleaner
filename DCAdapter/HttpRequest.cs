@@ -15,7 +15,7 @@ namespace DCAdapter
         /// <summary>
         /// 서버와의 통신에 사용되는 Fake User-Agent
         /// </summary>
-        static string UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36";
+        readonly static string UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36";
         
         private async Task<LoginStatus> RequestLogin(string id, string pw, bool retry = true)
         {
@@ -24,18 +24,14 @@ namespace DCAdapter
             LoginStatus status = new LoginStatus();
 
             // 로그인 페이지에 한번은 접속해야 정상 동작함
-            Dictionary<string, string> LoginParams = null;
+            string loginPageSrc = await RequestLoginSource(gallUrl);
+            if (loginPageSrc.Contains("로그인 되었습니다"))
+            {
+                status = LoginStatus.Success;
+                return status;
+            }
 
-            try
-            {
-                LoginParams = await RequestLoginSource(gallUrl);
-            }
-            catch(Exception ex)
-            {
-                if (ex.Message == "로그인 되었습니다")
-                    return LoginStatus.Success;
-                throw;
-            }
+            Dictionary<string, string> LoginParams = HtmlParser.GetLoginParameter(loginPageSrc);
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/member_check.php");
 
@@ -101,7 +97,7 @@ namespace DCAdapter
             return status;
         }
 
-        private async Task<Dictionary<string, string>> RequestLoginSource(string gallUrl)
+        private async Task<string> RequestLoginSource(string gallUrl)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl));
 
@@ -119,13 +115,8 @@ namespace DCAdapter
                     using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                     {
                         string result = reader.ReadToEnd();
-                        if ((response as HttpWebResponse).Cookies["userAgent"] != null)
-                            UserAgent = HttpUtility.UrlDecode((response as HttpWebResponse).Cookies["userAgent"].Value);
 
-                        if (result.Contains("로그인 되었습니다"))
-                            throw new Exception("로그인 되었습니다");
-
-                        return HtmlParser.GetLoginParameter(result);
+                        return result;
                     }
                 }
                 else
