@@ -44,7 +44,7 @@
             this.tb_ID.Location = new System.Drawing.Point(71, 22);
             this.tb_ID.Name = "tb_ID";
             this.tb_ID.Size = new System.Drawing.Size(179, 21);
-            this.tb_ID.TabIndex = 0;
+            this.tb_ID.TabIndex = 1;
             this.tb_ID.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tb_ID_KeyPress);
             // 
             // tb_PW
@@ -53,7 +53,7 @@
             this.tb_PW.Name = "tb_PW";
             this.tb_PW.PasswordChar = '*';
             this.tb_PW.Size = new System.Drawing.Size(179, 21);
-            this.tb_PW.TabIndex = 1;
+            this.tb_PW.TabIndex = 3;
             this.tb_PW.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tb_PW_KeyPress);
             // 
             // lbl_ID
@@ -62,7 +62,7 @@
             this.lbl_ID.Location = new System.Drawing.Point(12, 27);
             this.lbl_ID.Name = "lbl_ID";
             this.lbl_ID.Size = new System.Drawing.Size(16, 12);
-            this.lbl_ID.TabIndex = 2;
+            this.lbl_ID.TabIndex = 0;
             this.lbl_ID.Text = "ID";
             // 
             // lbl_PW
@@ -71,7 +71,7 @@
             this.lbl_PW.Location = new System.Drawing.Point(12, 59);
             this.lbl_PW.Name = "lbl_PW";
             this.lbl_PW.Size = new System.Drawing.Size(53, 12);
-            this.lbl_PW.TabIndex = 3;
+            this.lbl_PW.TabIndex = 2;
             this.lbl_PW.Text = "비밀번호";
             // 
             // btn_Login
@@ -79,7 +79,7 @@
             this.btn_Login.Location = new System.Drawing.Point(129, 138);
             this.btn_Login.Name = "btn_Login";
             this.btn_Login.Size = new System.Drawing.Size(75, 23);
-            this.btn_Login.TabIndex = 3;
+            this.btn_Login.TabIndex = 2;
             this.btn_Login.Text = "로그인";
             this.btn_Login.UseVisualStyleBackColor = true;
             this.btn_Login.Click += new System.EventHandler(this.btn_Login_Click);
@@ -90,7 +90,7 @@
             this.lbl_Error.Location = new System.Drawing.Point(26, 116);
             this.lbl_Error.Name = "lbl_Error";
             this.lbl_Error.Size = new System.Drawing.Size(65, 12);
-            this.lbl_Error.TabIndex = 2;
+            this.lbl_Error.TabIndex = 1;
             this.lbl_Error.Text = "에러메시지";
             // 
             // gb_Login
@@ -111,7 +111,7 @@
             this.btn_NoAccn.Location = new System.Drawing.Point(210, 138);
             this.btn_NoAccn.Name = "btn_NoAccn";
             this.btn_NoAccn.Size = new System.Drawing.Size(75, 23);
-            this.btn_NoAccn.TabIndex = 4;
+            this.btn_NoAccn.TabIndex = 3;
             this.btn_NoAccn.Text = "유동닉";
             this.btn_NoAccn.UseVisualStyleBackColor = true;
             this.btn_NoAccn.Click += new System.EventHandler(this.btn_NoAccn_Click);

@@ -124,7 +124,7 @@
             this.btn_RemoveAllComment.Location = new System.Drawing.Point(286, 474);
             this.btn_RemoveAllComment.Name = "btn_RemoveAllComment";
             this.btn_RemoveAllComment.Size = new System.Drawing.Size(91, 23);
-            this.btn_RemoveAllComment.TabIndex = 5;
+            this.btn_RemoveAllComment.TabIndex = 3;
             this.btn_RemoveAllComment.Text = "갤로그도 삭제";
             this.btn_RemoveAllComment.UseVisualStyleBackColor = true;
             this.btn_RemoveAllComment.Click += new System.EventHandler(this.btn_RemoveAllComment_Click);
@@ -135,7 +135,7 @@
             this.btn_RemoveGallComment.Location = new System.Drawing.Point(185, 474);
             this.btn_RemoveGallComment.Name = "btn_RemoveGallComment";
             this.btn_RemoveGallComment.Size = new System.Drawing.Size(95, 23);
-            this.btn_RemoveGallComment.TabIndex = 5;
+            this.btn_RemoveGallComment.TabIndex = 2;
             this.btn_RemoveGallComment.Text = "갤러리만 삭제";
             this.btn_RemoveGallComment.UseVisualStyleBackColor = true;
             this.btn_RemoveGallComment.Click += new System.EventHandler(this.btn_RemoveGallComment_Click);
@@ -161,7 +161,7 @@
             this.dgv_CommentList.RowTemplate.Height = 23;
             this.dgv_CommentList.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgv_CommentList.Size = new System.Drawing.Size(370, 448);
-            this.dgv_CommentList.TabIndex = 3;
+            this.dgv_CommentList.TabIndex = 0;
             this.dgv_CommentList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dgv_CommentList_MouseClick);
             this.dgv_CommentList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.dgv_CommentList_MouseDoubleClick);
             // 
@@ -195,7 +195,7 @@
             this.btn_LoadComments.Location = new System.Drawing.Point(6, 474);
             this.btn_LoadComments.Name = "btn_LoadComments";
             this.btn_LoadComments.Size = new System.Drawing.Size(75, 23);
-            this.btn_LoadComments.TabIndex = 2;
+            this.btn_LoadComments.TabIndex = 1;
             this.btn_LoadComments.Text = "불러오기";
             this.btn_LoadComments.UseVisualStyleBackColor = true;
             this.btn_LoadComments.Click += new System.EventHandler(this.btn_LoadComments_Click);
@@ -222,7 +222,7 @@
             this.btn_RemoveGallArticle.Location = new System.Drawing.Point(184, 474);
             this.btn_RemoveGallArticle.Name = "btn_RemoveGallArticle";
             this.btn_RemoveGallArticle.Size = new System.Drawing.Size(95, 23);
-            this.btn_RemoveGallArticle.TabIndex = 4;
+            this.btn_RemoveGallArticle.TabIndex = 2;
             this.btn_RemoveGallArticle.Text = "갤러리만 삭제";
             this.btn_RemoveGallArticle.UseVisualStyleBackColor = true;
             this.btn_RemoveGallArticle.Click += new System.EventHandler(this.btn_RemoveGallArticle_Click);
@@ -257,7 +257,7 @@
             this.dgv_ArticleList.RowTemplate.Height = 23;
             this.dgv_ArticleList.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgv_ArticleList.Size = new System.Drawing.Size(369, 447);
-            this.dgv_ArticleList.TabIndex = 2;
+            this.dgv_ArticleList.TabIndex = 0;
             this.dgv_ArticleList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dgv_ArticleList_MouseClick);
             this.dgv_ArticleList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.dgv_ArticleList_MouseDoubleClick);
             // 

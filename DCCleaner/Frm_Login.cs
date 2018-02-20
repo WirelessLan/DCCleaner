@@ -37,6 +37,8 @@ namespace DCCleaner
 
             btn_Login.Enabled = false;
             btn_NoAccn.Enabled = false;
+            tb_ID.Enabled = false;
+            tb_PW.Enabled = false;
 
             bool result = false;
             this.lbl_Error.Text = "로그인중입니다.";
@@ -49,6 +51,8 @@ namespace DCCleaner
             {
                 btn_Login.Enabled = true;
                 btn_NoAccn.Enabled = true;
+                tb_ID.Enabled = true;
+                tb_PW.Enabled = true;
                 this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
 
                 return;
@@ -65,6 +69,8 @@ namespace DCCleaner
             {
                 btn_Login.Enabled = true;
                 btn_NoAccn.Enabled = true;
+                tb_ID.Enabled = true;
+                tb_PW.Enabled = true;
                 lbl_Error.Text = connector.LoginInfo.ErrorMessage;
             }
         }
