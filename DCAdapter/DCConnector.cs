@@ -14,11 +14,11 @@ namespace DCAdapter
         CookieContainer cookies;    // 내부 연결에 사용되는 쿠키 컨테이너입니다.
         string user_id = "";
 
-        public LoginInfo LoginInfo { get; }
+        public LoginInformation LoginInfo { get; }
 
         public DCConnector()
         {
-            LoginInfo = new LoginInfo();
+            LoginInfo = new LoginInformation();
             cookies = new CookieContainer();
         }
 

@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace DCAdapter
 {
-    public class LoginInfo
+    public class LoginInformation
     {
-
         /// <summary>
         /// 로그인 여부를 표시합니다.
         /// </summary>
@@ -24,7 +23,7 @@ namespace DCAdapter
         /// </summary>
         public LoginStatus Status { get; set; } = LoginStatus.NotLogin;
 
-        public LoginInfo()
+        public LoginInformation()
         {
             Status = LoginStatus.NotLogin;
             IsLoggedIn = false;

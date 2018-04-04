@@ -128,9 +128,7 @@ namespace DCAdapter
                     {
                         using (StreamReader readStream = new StreamReader(responseStream, Encoding.UTF8))
                         {
-                            string result = readStream.ReadToEnd();
-
-                            return result;
+                            return readStream.ReadToEnd();
                         }
                     }
                 }
@@ -165,8 +163,7 @@ namespace DCAdapter
                     {
                         using (StreamReader reader = new StreamReader(stream))
                         {
-                            string result = reader.ReadToEnd();
-                            return result;
+                            return reader.ReadToEnd();
                         }
                     }
                 }
@@ -700,9 +697,7 @@ namespace DCAdapter
                     {
                         using (StreamReader reader = new StreamReader(stream))
                         {
-                            string result = reader.ReadToEnd();
-
-                            return result;
+                            return reader.ReadToEnd();
                         }
                     }
                 }
@@ -754,9 +749,7 @@ namespace DCAdapter
                     {
                         using (StreamReader reader = new StreamReader(stream))
                         {
-                            string result = reader.ReadToEnd();
-
-                            return result;
+                            return reader.ReadToEnd();
                         }
                     }
                 }
@@ -787,9 +780,7 @@ namespace DCAdapter
                     {
                         using (StreamReader reader = new StreamReader(stream))
                         {
-                            string result = reader.ReadToEnd();
-
-                            return result;
+                            return reader.ReadToEnd();
                         }
                     }
                 }
@@ -819,9 +810,7 @@ namespace DCAdapter
                     {
                         using (StreamReader reader = new StreamReader(stream))
                         {
-                            string result = reader.ReadToEnd();
-
-                            return result;
+                            return reader.ReadToEnd();
                         }
                     }
                 }
@@ -852,9 +841,7 @@ namespace DCAdapter
                     {
                         using (StreamReader reader = new StreamReader(stream))
                         {
-                            string result = reader.ReadToEnd();
-
-                            return result;
+                            return reader.ReadToEnd();
                         }
                     }
                 }
@@ -884,9 +871,7 @@ namespace DCAdapter
                     {
                         using (StreamReader reader = new StreamReader(stream))
                         {
-                            string result = reader.ReadToEnd();
-
-                            return result;
+                            return reader.ReadToEnd();
                         }
                     }
                 }
