@@ -318,12 +318,12 @@ namespace DCAdapter
                 return info;
             }
 
-            info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameter()
+            info.GalleryDeleteParameter = new GalleryArticleDeleteParameter()
             {
                 GalleryId = delParams.GalleryId,
                 ArticleID = delParams.ArticleId
             };
-            info.GallogArticleDeleteParameters = delParams;
+            info.GallogDeleteParameter = delParams;
 
             Thread.Sleep(delay);
 
@@ -339,9 +339,9 @@ namespace DCAdapter
             try
             {
                 if (LoginInfo.IsLoggedIn)
-                    res1 = await PostDeleteGalleryArticleAsync(info.GalleryArticleDeleteParameters, gallType, delay);
+                    res1 = await PostDeleteGalleryArticleAsync(info.GalleryDeleteParameter, gallType, delay);
                 else
-                    res1 = await PostDeleteGalleryFlowArticleAsync(info.GalleryArticleDeleteParameters, gallType, delay);
+                    res1 = await PostDeleteGalleryFlowArticleAsync(info.GalleryDeleteParameter, gallType, delay);
             }
             catch (Exception ex)
             {
@@ -369,7 +369,7 @@ namespace DCAdapter
 
                 try
                 {
-                    res2 = await PostDeleteGallogArticleAsync(info.GallogArticleDeleteParameters, delay);
+                    res2 = await PostDeleteGallogArticleAsync(info.GallogDeleteParameter, delay);
                 }
                 catch (Exception ex)
                 {
@@ -414,13 +414,13 @@ namespace DCAdapter
                 return info;
             }
 
-            info.GalleryCommentDeleteParameters = new GalleryCommentDeleteParameter()
+            info.GalleryDeleteParameter = new GalleryCommentDeleteParameter()
             {
                 GalleryId = delParams.GalleryId,
                 ArticleId = delParams.ArticleId,
                 CommentId = delParams.CommentId
             };
-            info.GallogCommentDeleteParameters = delParams;
+            info.GallogDeleteParameter = delParams;
 
             Thread.Sleep(delay);
 
@@ -436,7 +436,7 @@ namespace DCAdapter
 
             try
             {
-                res1 = await PostDeleteGalleryCommentAsync(info.GalleryCommentDeleteParameters);
+                res1 = await PostDeleteGalleryCommentAsync(info.GalleryDeleteParameter);
             }
             catch (Exception ex)
             {
@@ -464,7 +464,7 @@ namespace DCAdapter
 
                 try
                 {
-                    res2 = await PostDeleteGallogCommentAsync(info.GallogCommentDeleteParameters, delay);
+                    res2 = await PostDeleteGallogCommentAsync(info.GallogDeleteParameter, delay);
                 }
                 catch (Exception ex)
                 {

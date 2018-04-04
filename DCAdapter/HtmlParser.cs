@@ -428,7 +428,7 @@ namespace DCAdapter
                 ArticleInfo info = new ArticleInfo();
                 info.Date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
                 info.Title = HttpUtility.HtmlDecode(title);
-                info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameter()
+                info.GalleryDeleteParameter = new GalleryArticleDeleteParameter()
                 {
                     GalleryId = gall_id,
                     ArticleID = articleNo

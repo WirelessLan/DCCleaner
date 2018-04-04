@@ -39,7 +39,7 @@ namespace DCAdapter
         /// 삭제 메시지. 삭제 에러 발생시 사용.
         /// </summary>
         public string DeleteMessage;
-        public GallogCommentDeleteParameter GallogCommentDeleteParameters;
-        public GalleryCommentDeleteParameter GalleryCommentDeleteParameters;
+        public GallogCommentDeleteParameter GallogDeleteParameter;
+        public GalleryCommentDeleteParameter GalleryDeleteParameter;
     }
 }

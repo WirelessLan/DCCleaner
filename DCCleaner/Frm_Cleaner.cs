@@ -676,7 +676,7 @@ namespace DCCleaner
                 try
                 {
                     if (!conn.LoginInfo.IsLoggedIn)
-                        info.GalleryArticleDeleteParameters.Password = password;
+                        info.GalleryDeleteParameter.Password = password;
                     res = await conn.DeleteArticle(info, gallType, false);
                 }
                 catch
@@ -806,7 +806,7 @@ namespace DCCleaner
             try
             {
                 if (!conn.LoginInfo.IsLoggedIn)
-                    target.GalleryArticleDeleteParameters.Password = password;
+                    target.GalleryDeleteParameter.Password = password;
                 await conn.DeleteArticle(target, gallType, false);
             }
             catch
