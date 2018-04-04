@@ -8,14 +8,20 @@ namespace DCAdapter
 {
     class Utility
     {
+        private readonly static string gallogDefaultDomain = "http://gallog.dcinside.com/inc/";
+
         public static string GetAbsoulteURL(string input)
         {
-            const string _Domain = "http://gallog.dcinside.com/inc/";
+            return GetAbsoulteURL(input, gallogDefaultDomain);
+        }
+
+        public static string GetAbsoulteURL(string input, string domainPath)
+        {
             string prefix = "document.location.href=";
             string retVal = input.Replace(prefix, "");
             retVal = retVal.Replace("'", "").Replace("\"", "").Replace(";", "");
 
-            return _Domain + retVal.Trim();
+            return domainPath + retVal.Trim();
         }
     }
 }

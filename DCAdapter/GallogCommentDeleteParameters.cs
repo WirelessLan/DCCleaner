@@ -14,7 +14,6 @@ namespace DCAdapter
         public string ArticleId;
         public string CommentId;
         public string LogNo;
-        public string AdditionalKey;
-        public string AdditionalValue;
+        public ParameterStorage AdditionalParameters = new ParameterStorage();
     }
 }

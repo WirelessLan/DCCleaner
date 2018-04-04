@@ -11,21 +11,14 @@ namespace DCAdapter
     /// </summary>
     public partial class DCConnector
     {
-        LoginInfo loginInfo;
         CookieContainer cookies;    // 내부 연결에 사용되는 쿠키 컨테이너입니다.
         string user_id = "";
 
-        public LoginInfo LoginInfo
-        {
-            get
-            {
-                return loginInfo;
-            }
-        }
+        public LoginInfo LoginInfo { get; }
 
         public DCConnector()
         {
-            loginInfo = new LoginInfo();
+            LoginInfo = new LoginInfo();
             cookies = new CookieContainer();
         }
 
@@ -39,34 +32,34 @@ namespace DCAdapter
         {
             if(string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(pw))
             {
-                loginInfo.Status = LoginStatus.ErrorBoth;
-                loginInfo.ErrorMessage = "아이디 또는 비밀번호를 입력해주세요.";
+                LoginInfo.Status = LoginStatus.ErrorBoth;
+                LoginInfo.ErrorMessage = "아이디 또는 비밀번호를 입력해주세요.";
                 return false;
             }
 
-            loginInfo.Status = await RequestLogin(id, pw);
+            LoginInfo.Status = await RequestLoginAsync(id, pw);
 
-            if (loginInfo.Status == LoginStatus.Success)
+            if (LoginInfo.Status == LoginStatus.Success)
             {
-                loginInfo.IsLoggedIn = true;
+                LoginInfo.IsLoggedIn = true;
 
-                loginInfo.ErrorMessage = null;
-                this.user_id = id;
+                LoginInfo.ErrorMessage = null;
+                user_id = id;
 
                 return true;
             }
             else
             {
-                loginInfo.IsLoggedIn = false;
+                LoginInfo.IsLoggedIn = false;
 
-                if (loginInfo.Status == LoginStatus.IDError)
-                    loginInfo.ErrorMessage = "존재하지 않는 아이디입니다.";
-                else if (loginInfo.Status == LoginStatus.PasswordError)
-                    loginInfo.ErrorMessage = "잘못된 비밀번호입니다.";
-                else if (loginInfo.Status == LoginStatus.ErrorBoth)
-                    loginInfo.ErrorMessage = "아이디 또는 비밀번호가 잘못되었습니다.";
-                else if(loginInfo.Status == LoginStatus.Unknown)
-                    loginInfo.ErrorMessage = "서버 통신중 알 수없는 에러가 발생하였습니다.";
+                if (LoginInfo.Status == LoginStatus.IDError)
+                    LoginInfo.ErrorMessage = "존재하지 않는 아이디입니다.";
+                else if (LoginInfo.Status == LoginStatus.PasswordError)
+                    LoginInfo.ErrorMessage = "잘못된 비밀번호입니다.";
+                else if (LoginInfo.Status == LoginStatus.ErrorBoth)
+                    LoginInfo.ErrorMessage = "아이디 또는 비밀번호가 잘못되었습니다.";
+                else if(LoginInfo.Status == LoginStatus.Unknown)
+                    LoginInfo.ErrorMessage = "서버 통신중 알 수없는 에러가 발생하였습니다.";
 
                 return false;
             }
@@ -87,7 +80,7 @@ namespace DCAdapter
             try
             {
                 // 갤로그의 HTML 소스를 요청
-                html = await RequestGallogMainSource(this.user_id);
+                html = await RequestGallogMainPage(user_id);
             }
             catch
             {
@@ -150,7 +143,7 @@ namespace DCAdapter
             try
             {
                 // 갤로그의 HTML 소스를 요청
-                html = await RequestGallogMainSource(this.user_id);
+                html = await RequestGallogMainPage(this.user_id);
             }
             catch
             {
@@ -202,7 +195,7 @@ namespace DCAdapter
         /// <returns>해당 페이지의 글 목록</returns>
         private async Task<List<ArticleInfo>> LoadArticleList(int page)
         {
-            string html = await RequestGallogMainListSource(user_id, page, 1);
+            string html = await RequestGallogListPage(user_id, page, 1);
             List<ArticleInfo> articleList = HtmlParser.GetArticleList(html);
 
             return articleList;
@@ -215,7 +208,7 @@ namespace DCAdapter
         /// <returns>해당 페이지의 댓글 목록</returns>
         private async Task<List<CommentInfo>> LoadCommentList(int page)
         {
-            string html = await RequestGallogMainListSource(user_id, 1, page);
+            string html = await RequestGallogListPage(user_id, 1, page);
             List<CommentInfo> articleList = HtmlParser.GetCommentList(html);
 
             return articleList;
@@ -245,7 +238,7 @@ namespace DCAdapter
 
                 try
                 {
-                    req = await RequestGalleryNicknameSearchSource(gall_id, gallType, nickname, searchPos, searchPage);
+                    req = await RequestGalleryNicknameSearchPage(gall_id, gallType, nickname, searchPos, searchPage);
                 }
                 catch (Exception ex)
                 {
@@ -260,8 +253,8 @@ namespace DCAdapter
                     {
                         try
                         {
-                            await Task.Delay(400);
-                            req = await RequestGalleryNicknameSearchSource(gall_id, gallType, nickname, searchPos, searchPage);
+                            await Task.Delay(500);
+                            req = await RequestGalleryNicknameSearchPage(gall_id, gallType, nickname, searchPos, searchPage);
 
                             if (req != null && !string.IsNullOrWhiteSpace(req.Item1))
                                 break;
@@ -282,7 +275,7 @@ namespace DCAdapter
 
                 int tmpPos = searchPos;
 
-                List<ArticleInfo> newSearchedList = HtmlParser.GetSearchedArticleList(searchHtml, gall_id, nickname, gallType, loginInfo.IsLoggedIn, ref searchPos, out maxPage);
+                List<ArticleInfo> newSearchedList = HtmlParser.GetSearchedArticleList(searchHtml, gall_id, nickname, gallType, LoginInfo.IsLoggedIn, ref searchPos, out maxPage);
 
                 searchedArticleList.AddRange(newSearchedList);
 
@@ -345,7 +338,7 @@ namespace DCAdapter
             DeleteResult res1 = null;
             try
             {
-                if (loginInfo.IsLoggedIn)
+                if (LoginInfo.IsLoggedIn)
                     res1 = await RequestDeleteGalleryArticle(info.GalleryArticleDeleteParameters, gallType, delay);
                 else
                     res1 = await RequestDeleteGalleryFlowArticle(info.GalleryArticleDeleteParameters, gallType, delay);

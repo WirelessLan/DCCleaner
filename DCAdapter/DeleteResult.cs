@@ -8,28 +8,14 @@ namespace DCAdapter
 {
     public class DeleteResult
     {
-        bool success = false;
-        string errMsg = "";
+        public bool Success { get; } = false;
 
-        public bool Success
-        {
-            get
-            {
-                return success;
-            }
-        }
-        public string ErrorMessage
-        {
-            get
-            {
-                return errMsg;
-            }
-        }
+        public string ErrorMessage { get; } = "";
 
         public DeleteResult(bool success, string msg)
         {
-            this.success = success;
-            this.errMsg = msg;
+            Success = success;
+            ErrorMessage = msg;
         }
     }
 }

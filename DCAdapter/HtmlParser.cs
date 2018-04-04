@@ -59,12 +59,12 @@ namespace DCAdapter
         /// <param name="gallType">갤러리 구분</param>
         /// <param name="delete_Params">글 삭제에 필요한 파라미터</param>
         /// <param name="lately_gallery">최근 방문한 갤러리</param>
-        internal static void GetDeleteArticleParameters(string html, GalleryType gallType, out Dictionary<string, string> delete_Params, out string lately_gallery)
+        internal static void GetDeleteArticleParameters(string html, GalleryType gallType, out ParameterStorage delete_Params, out string lately_gallery)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            delete_Params = new Dictionary<string, string>();
+            delete_Params = new ParameterStorage();
             lately_gallery = null;
 
             HtmlNode deleteNode = null;
@@ -100,7 +100,7 @@ namespace DCAdapter
 
             foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
             {
-                delete_Params.Add(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
+                delete_Params.Push(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
             }
 
             string jsParamName, jsParamValue, jsEncCode;
@@ -118,17 +118,17 @@ namespace DCAdapter
             // 글 삭제시 실행되는 스크립트의 추가 값을 가져옴
             JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
 
-            delete_Params.Add(jsParamName, jsParamValue);
+            delete_Params.Push(jsParamName, jsParamValue);
             if(gallType == GalleryType.Normal)
                 delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
         }
 
-        internal static void GetDeleteFlowArticleParameters(string html, GalleryType gallType, out Dictionary<string, string> delete_Params, out string lately_gallery)
+        internal static void GetDeleteFlowArticleParameters(string html, GalleryType gallType, out ParameterStorage delete_Params, out string lately_gallery)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            delete_Params = new Dictionary<string, string>();
+            delete_Params = new ParameterStorage();
 
             HtmlNode deleteNode = null;
             lately_gallery = null;
@@ -155,7 +155,7 @@ namespace DCAdapter
 
             foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
             {
-                delete_Params.Add(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
+                delete_Params.Push(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
             }
 
             string jsParamName, jsParamValue, jsEncCode;
@@ -172,7 +172,7 @@ namespace DCAdapter
             }
             JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType,  out jsEncCode, out jsParamName, out jsParamValue);
 
-            delete_Params.Add(jsParamName, jsParamValue);
+            delete_Params.Push(jsParamName, jsParamValue);
             if (gallType == GalleryType.Normal)
                 delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
         }
@@ -269,8 +269,7 @@ namespace DCAdapter
             newParams.ArticleId = artNode.Attributes["value"].Value;
             newParams.LogNo = logNode.Attributes["value"].Value;
             newParams.DCCKey = dcc_keyNode.Attributes["value"].Value;
-            newParams.AdditionalKey = randomKeyNode.Attributes["name"].Value;
-            newParams.AdditionalValue = randomKeyNode.Attributes["value"].Value;
+            newParams.AdditionalParameters.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
 
             return newParams;
         }
@@ -296,8 +295,7 @@ namespace DCAdapter
             newParams.ArticleId = artNode.Attributes["value"].Value;
             newParams.CommentId = cNode.Attributes["value"].Value;
             newParams.LogNo = logNode.Attributes["value"].Value;
-            newParams.AdditionalKey = randomKeyNode.Attributes["name"].Value;
-            newParams.AdditionalValue = randomKeyNode.Attributes["value"].Value;
+            newParams.AdditionalParameters.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
 
             return newParams;
         }
@@ -420,9 +418,8 @@ namespace DCAdapter
             return searchedList;
         }
 
-        internal static Dictionary<string, string> GetLoginParameter(string src)
+        internal static ParameterStorage GetLoginParameter(string src)
         {
-            Dictionary<string, string> retParams = new Dictionary<string, string>();
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(src);
 

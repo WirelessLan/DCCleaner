@@ -8,59 +8,26 @@ namespace DCAdapter
 {
     public class LoginInfo
     {
-        LoginStatus status = LoginStatus.NotLogin;
-        string errMsg = null;
-        bool isLoggedIn;
 
         /// <summary>
         /// 로그인 여부를 표시합니다.
         /// </summary>
-        public bool IsLoggedIn
-        {
-            get
-            {
-                return isLoggedIn;
-            }
-            set
-            {
-                isLoggedIn = value;
-            }
-        }
+        public bool IsLoggedIn { get; set; }
 
         /// <summary>
         /// 로그인시 에러 메시지를 나타냅니다.
         /// </summary>
-        public string ErrorMessage
-        {
-            get
-            {
-                return errMsg;
-            }
-            set
-            {
-                errMsg = value;
-            }
-        }
+        public string ErrorMessage { get; set; } = null;
 
         /// <summary>
         /// 로그인 상태를 나타냅니다.
         /// </summary>
-        public LoginStatus Status
-        {
-            get
-            {
-                return status;
-            }
-            set
-            {
-                status = value;
-            }
-        }
+        public LoginStatus Status { get; set; } = LoginStatus.NotLogin;
 
         public LoginInfo()
         {
-            status = LoginStatus.NotLogin;
-            isLoggedIn = false;
+            Status = LoginStatus.NotLogin;
+            IsLoggedIn = false;
         }
     }
 }

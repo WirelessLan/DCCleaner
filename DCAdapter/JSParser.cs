@@ -15,7 +15,7 @@ namespace DCAdapter
             value = null;
             encCode = null;
 
-#if false
+#if true
             Match encData = Regex.Match(script, "var _r = _d\\(\'(.*)\'\\)");
 #else
             Match encData = null;
@@ -41,14 +41,14 @@ namespace DCAdapter
                 throw new Exception("자바스크립트 파싱에 실패하였습니다.");
         }
 
-        internal static Dictionary<string, string> ParseLoginParameters(string script)
+        internal static ParameterStorage ParseLoginParameters(string script)
         {
-            Dictionary<string, string> retVal = new Dictionary<string, string>();
+            ParameterStorage retVal = new ParameterStorage();
 
             Match frmData = Regex.Match(script, "name:\"(.*?)\", value:\"(.*?)\"");
             if (frmData.Success)
             {
-                retVal.Add(frmData.Groups[1].Value, frmData.Groups[2].Value);
+                retVal.Push(frmData.Groups[1].Value, frmData.Groups[2].Value);
             }
             else
                 throw new Exception("스크립트 파싱에 실패하였습니다.");
