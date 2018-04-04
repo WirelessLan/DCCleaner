@@ -213,7 +213,7 @@ namespace DCAdapter
 
         internal static async Task<List<CommentInformation>> GetCommentListAsync(string html)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(html);
@@ -229,7 +229,7 @@ namespace DCAdapter
                         string content = HttpUtility.HtmlDecode(node.SelectSingleNode("./td[3]").InnerText);
                         string date = node.SelectSingleNode("./td[5]").InnerText;
 
-                        string url = Utility.GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);
+                        string url = await GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);
 
                         coms.Add(new CommentInformation() { Name = name, Content = content, Date = date, DeleteUrl = url });
                     }
@@ -241,7 +241,7 @@ namespace DCAdapter
 
         internal static async Task<List<ArticleInformation>> GetArticleListAsync(string html)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(html);
@@ -254,7 +254,7 @@ namespace DCAdapter
                     {
                         string title = node.ParentNode.PreviousSibling.PreviousSibling.PreviousSibling.PreviousSibling.InnerText;
                         title = HttpUtility.HtmlDecode(title).Trim();
-                        string url = Utility.GetAbsoulteURL(node.Attributes["onClick"].Value);
+                        string url = await GetAbsoulteURL(node.Attributes["onClick"].Value);
                         string date = node.ParentNode.InnerText;
 
                         arts.Add(new ArticleInformation() { Title = title, DeleteUrl = url, Date = date });
@@ -262,6 +262,19 @@ namespace DCAdapter
                 }
 
                 return arts;
+            });
+        }
+
+        private static async Task<string> GetAbsoulteURL(string value)
+        {
+            return await Task.Run(() =>
+            {
+                const string gallogDefaultDomain = "http://gallog.dcinside.com/inc/";
+                string prefix = "document.location.href=";
+                string retVal = value.Replace(prefix, "");
+                retVal = retVal.Replace("'", "").Replace("\"", "").Replace(";", "");
+
+                return gallogDefaultDomain + retVal.Trim();
             });
         }
 
