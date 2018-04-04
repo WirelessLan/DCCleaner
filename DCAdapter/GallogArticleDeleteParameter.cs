@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace DCAdapter
 {
-    public class GallogCommentDeleteParameters
+    public class GallogArticleDeleteParameter
     {
         public string UserId;
         public string GalleryId;
         public string GalleryNo;
         public string ArticleId;
-        public string CommentId;
         public string LogNo;
-        public ParameterStorage AdditionalParameters = new ParameterStorage();
+        public string DCCKey;
+        public ParameterStorage AdditionalParameter = new ParameterStorage();
     }
 }

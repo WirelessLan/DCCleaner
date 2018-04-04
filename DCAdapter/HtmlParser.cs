@@ -265,11 +265,11 @@ namespace DCAdapter
             });
         }
 
-        internal static async Task<GallogArticleDeleteParameters> GetDeleteGallogArticleParameterAsync(string pageHtml)
+        internal static async Task<GallogArticleDeleteParameter> GetDeleteGallogArticleParameterAsync(string pageHtml)
         {
             return await Task.Run(() =>
             {
-                GallogArticleDeleteParameters newParams = new GallogArticleDeleteParameters();
+                GallogArticleDeleteParameter newParams = new GallogArticleDeleteParameter();
 
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(pageHtml);
@@ -288,17 +288,17 @@ namespace DCAdapter
                 newParams.ArticleId = artNode.Attributes["value"].Value;
                 newParams.LogNo = logNode.Attributes["value"].Value;
                 newParams.DCCKey = dcc_keyNode.Attributes["value"].Value;
-                newParams.AdditionalParameters.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
+                newParams.AdditionalParameter.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
 
                 return newParams;
             });
         }
 
-        internal static async Task<GallogCommentDeleteParameters> GetDeleteGallogCommentParameterAsync(string pageHtml)
+        internal static async Task<GallogCommentDeleteParameter> GetDeleteGallogCommentParameterAsync(string pageHtml)
         {
             return await Task.Run(() =>
             {
-                GallogCommentDeleteParameters newParams = new GallogCommentDeleteParameters();
+                GallogCommentDeleteParameter newParams = new GallogCommentDeleteParameter();
 
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(pageHtml);
@@ -317,7 +317,7 @@ namespace DCAdapter
                 newParams.ArticleId = artNode.Attributes["value"].Value;
                 newParams.CommentId = cNode.Attributes["value"].Value;
                 newParams.LogNo = logNode.Attributes["value"].Value;
-                newParams.AdditionalParameters.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
+                newParams.AdditionalParameter.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
 
                 return newParams;
             });
@@ -428,7 +428,7 @@ namespace DCAdapter
                 ArticleInfo info = new ArticleInfo();
                 info.Date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
                 info.Title = HttpUtility.HtmlDecode(title);
-                info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameters()
+                info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameter()
                 {
                     GalleryId = gall_id,
                     ArticleID = articleNo

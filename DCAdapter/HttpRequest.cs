@@ -236,7 +236,7 @@ namespace DCAdapter
             throw new Exception("알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> PostDeleteGalleryArticleAsync(GalleryArticleDeleteParameters info, GalleryType gallType, int delay)
+        private async Task<DeleteResult> PostDeleteGalleryArticleAsync(GalleryArticleDeleteParameter info, GalleryType gallType, int delay)
         {
             string pageHtml = await GetDeleteGalleryArticlePageAsync(info.GalleryId, info.ArticleID, null, gallType);
             Tuple<ParameterStorage, string> parseResult;
@@ -330,7 +330,7 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> PostDeleteGalleryFlowArticleAsync(GalleryArticleDeleteParameters delParam, GalleryType gallType, int delay)
+        private async Task<DeleteResult> PostDeleteGalleryFlowArticleAsync(GalleryArticleDeleteParameter delParam, GalleryType gallType, int delay)
         {
             string pageHtml = await GetDeleteGalleryArticlePageAsync(delParam.GalleryId, delParam.ArticleID, null, gallType);
             Tuple<ParameterStorage, string> parseResult;
@@ -427,7 +427,7 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> PostDeleteMinorGalleryFlowArticleAsync(GalleryArticleDeleteParameters delParam, string key)
+        private async Task<DeleteResult> PostDeleteMinorGalleryFlowArticleAsync(GalleryArticleDeleteParameter delParam, string key)
         {
             string pageHtml = await GetDeleteGalleryArticlePageAsync(delParam.GalleryId, delParam.ArticleID, key, GalleryType.Minor);
             Tuple<ParameterStorage, string> parseResult;
@@ -497,7 +497,7 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> PostDeleteGalleryCommentAsync(GalleryCommentDeleteParameters param)
+        private async Task<DeleteResult> PostDeleteGalleryCommentAsync(GalleryCommentDeleteParameter param)
         {
             string commentPageHtml = await GetGalleryCommentViewPageAsync(param.GalleryId, param.ArticleId);
             string ci_t = null, check7 = null;
@@ -565,7 +565,7 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> PostDeleteGallogArticleAsync(GallogArticleDeleteParameters param, int delay)
+        private async Task<DeleteResult> PostDeleteGallogArticleAsync(GallogArticleDeleteParameter param, int delay)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteArticle.php";
             const string host = "gallog.dcinside.com";
@@ -588,7 +588,7 @@ namespace DCAdapter
                 string reqData = "rb=&dTp=1&gid=" + param.UserId + "&cid=" + param.GalleryNo +
                     "&pno=" + param.ArticleId + "&no=" + param.ArticleId + "&logNo=" + param.LogNo + "&id=" + param.GalleryId +
                     "&nate=&dcc_key=" + param.DCCKey
-                    + (param.AdditionalParameters["dcc_key"] != null ? "" : ("&" + param.AdditionalParameters.ToString()));
+                    + (param.AdditionalParameter["dcc_key"] != null ? "" : ("&" + param.AdditionalParameter.ToString()));
                 await writer.WriteAsync(reqData);
             }
 
@@ -619,7 +619,7 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> PostDeleteGallogCommentAsync(GallogCommentDeleteParameters param, int delay)
+        private async Task<DeleteResult> PostDeleteGallogCommentAsync(GallogCommentDeleteParameter param, int delay)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteRepOk.php";
             const string host = "gallog.dcinside.com";
@@ -643,7 +643,7 @@ namespace DCAdapter
                 string reqData = "rb=&dTp=1&gid=" + param.UserId + "&cid=" + param.GalleryNo + "&page=&pno=" +
                     "&no=" + param.ArticleId + "&c_no=" + param.CommentId + "&logNo=" + param.LogNo + "&id=" + param.GalleryId +
                     "&nate=&";
-                reqData += param.AdditionalParameters.ToString();
+                reqData += param.AdditionalParameter.ToString();
                 await writer.WriteAsync(reqData);
             }
 

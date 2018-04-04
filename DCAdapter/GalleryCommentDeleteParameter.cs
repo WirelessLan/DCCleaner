@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace DCAdapter
 {
-    public class GalleryArticleDeleteParameters
+    public class GalleryCommentDeleteParameter
     {
         public string GalleryId;
-        public string ArticleID;
-        public string Password;
+        public string ArticleId;
+        public string CommentId;
     }
 }

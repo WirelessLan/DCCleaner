@@ -48,10 +48,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Crypt.cs" />
-    <Compile Include="GalleryArticleDeleteParameters.cs" />
-    <Compile Include="GalleryCommentDeleteParameters.cs" />
-    <Compile Include="GallogArticleDeleteParameters.cs" />
-    <Compile Include="GallogCommentDeleteParameters.cs" />
+    <Compile Include="GalleryArticleDeleteParameter.cs" />
+    <Compile Include="GalleryCommentDeleteParameter.cs" />
+    <Compile Include="GallogArticleDeleteParameter.cs" />
+    <Compile Include="GallogCommentDeleteParameter.cs" />
     <Compile Include="JSParser.cs" />
     <Compile Include="ArticleInfo.cs" />
     <Compile Include="CommentInfo.cs" />

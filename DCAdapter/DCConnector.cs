@@ -304,7 +304,7 @@ namespace DCAdapter
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
             
-            GallogArticleDeleteParameters delParams = null;
+            GallogArticleDeleteParameter delParams = null;
             try
             {
                 delParams = await this.GetDeleteArticleInfoAsync(info.DeleteUrl);
@@ -318,7 +318,7 @@ namespace DCAdapter
                 return info;
             }
 
-            info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameters()
+            info.GalleryArticleDeleteParameters = new GalleryArticleDeleteParameter()
             {
                 GalleryId = delParams.GalleryId,
                 ArticleID = delParams.ArticleId
@@ -399,7 +399,7 @@ namespace DCAdapter
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
-            GallogCommentDeleteParameters delParams = null;
+            GallogCommentDeleteParameter delParams = null;
 
             try
             {
@@ -414,7 +414,7 @@ namespace DCAdapter
                 return info;
             }
 
-            info.GalleryCommentDeleteParameters = new GalleryCommentDeleteParameters()
+            info.GalleryCommentDeleteParameters = new GalleryCommentDeleteParameter()
             {
                 GalleryId = delParams.GalleryId,
                 ArticleId = delParams.ArticleId,
@@ -492,18 +492,18 @@ namespace DCAdapter
             return info;
         }
         
-        private async Task<GallogArticleDeleteParameters> GetDeleteArticleInfoAsync(string url)
+        private async Task<GallogArticleDeleteParameter> GetDeleteArticleInfoAsync(string url)
         {
             string galHtml = await GetDeleteGallogArticlePageAsync(url, user_id);
-            GallogArticleDeleteParameters retParams = await HtmlParser.GetDeleteGallogArticleParameterAsync(galHtml);
+            GallogArticleDeleteParameter retParams = await HtmlParser.GetDeleteGallogArticleParameterAsync(galHtml);
             retParams.UserId = user_id;
             return retParams;
         }
         
-        private async Task<GallogCommentDeleteParameters> GetDeleteCommentInfoAsync(string url)
+        private async Task<GallogCommentDeleteParameter> GetDeleteCommentInfoAsync(string url)
         {
             string galHtml = await GetDeleteGallogCommentPageAsync(url, user_id);
-            GallogCommentDeleteParameters retParams = await HtmlParser.GetDeleteGallogCommentParameterAsync(galHtml);
+            GallogCommentDeleteParameter retParams = await HtmlParser.GetDeleteGallogCommentParameterAsync(galHtml);
             retParams.UserId = user_id;
             return retParams;
         }
