@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DCAdapter
 {
-    class Crypt
+    class Cryption
     {
         internal static string DecryptCode(string jsEncCode, string service_code)
         {

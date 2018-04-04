@@ -125,7 +125,7 @@ namespace DCAdapter
 
                 delete_Params.Push(jsParamName, jsParamValue);
                 if (gallType == GalleryType.Normal)
-                    delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
+                    delete_Params["service_code"] = Cryption.DecryptCode(jsEncCode, delete_Params["service_code"]);
 
                 return new Tuple<ParameterStorage, string>(delete_Params, lately_gallery);
             });
@@ -178,7 +178,7 @@ namespace DCAdapter
 
                 delete_Params.Push(jsParamName, jsParamValue);
                 if (gallType == GalleryType.Normal)
-                    delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
+                    delete_Params["service_code"] = Cryption.DecryptCode(jsEncCode, delete_Params["service_code"]);
 
                 return new Tuple<ParameterStorage, string>(delete_Params, lately_gallery);
             });
@@ -211,14 +211,14 @@ namespace DCAdapter
             });
         }
 
-        internal static async Task<List<CommentInfo>> GetCommentListAsync(string html)
+        internal static async Task<List<CommentInformation>> GetCommentListAsync(string html)
         {
             return await Task.Run(() =>
             {
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                List<CommentInfo> coms = new List<CommentInfo>();
+                List<CommentInformation> coms = new List<CommentInformation>();
 
                 foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//table[@bgcolor='#F2F2F5']/tr"))
                 {
@@ -231,7 +231,7 @@ namespace DCAdapter
 
                         string url = Utility.GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);
 
-                        coms.Add(new CommentInfo() { Name = name, Content = content, Date = date, DeleteUrl = url });
+                        coms.Add(new CommentInformation() { Name = name, Content = content, Date = date, DeleteUrl = url });
                     }
                 }
 
@@ -239,14 +239,14 @@ namespace DCAdapter
             });
         }
 
-        internal static async Task<List<ArticleInfo>> GetArticleListAsync(string html)
+        internal static async Task<List<ArticleInformation>> GetArticleListAsync(string html)
         {
             return await Task.Run(() =>
             {
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                List<ArticleInfo> arts = new List<ArticleInfo>();
+                List<ArticleInformation> arts = new List<ArticleInformation>();
 
                 foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//img[@src='http://wstatic.dcinside.com/gallery/skin/gallog/icon_01.gif']"))
                 {
@@ -257,7 +257,7 @@ namespace DCAdapter
                         string url = Utility.GetAbsoulteURL(node.Attributes["onClick"].Value);
                         string date = node.ParentNode.InnerText;
 
-                        arts.Add(new ArticleInfo() { Title = title, DeleteUrl = url, Date = date });
+                        arts.Add(new ArticleInformation() { Title = title, DeleteUrl = url, Date = date });
                     }
                 }
 
@@ -323,14 +323,14 @@ namespace DCAdapter
             });
         }
         
-        internal static List<ArticleInfo> GetSearchedArticleList(string searchedHtml, string gall_id, string searchNick, GalleryType gallType, bool isFixed, ref int searchPos, out int maxPage)
+        internal static List<ArticleInformation> GetSearchedArticleList(string searchedHtml, string gall_id, string searchNick, GalleryType gallType, bool isFixed, ref int searchPos, out int maxPage)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(searchedHtml);
 
             maxPage = 0;
 
-            List<ArticleInfo> searchedList = new List<ArticleInfo>();
+            List<ArticleInformation> searchedList = new List<ArticleInformation>();
 
             string baseUrl = "http://gall.dcinside.com/";
 
@@ -425,7 +425,7 @@ namespace DCAdapter
                 Uri subjectUri = new Uri(articleUrl);
                 string articleNo = HttpUtility.ParseQueryString(subjectUri.Query).Get("no");
 
-                ArticleInfo info = new ArticleInfo();
+                ArticleInformation info = new ArticleInformation();
                 info.Date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
                 info.Title = HttpUtility.HtmlDecode(title);
                 info.GalleryDeleteParameter = new GalleryArticleDeleteParameter()

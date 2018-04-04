@@ -69,13 +69,13 @@ namespace DCAdapter
         /// 갤로그의 글 목록을 불러옵니다.
         /// </summary>
         /// <returns>갤로그의 글 목록을 반환합니다.</returns>
-        public async Task<List<ArticleInfo>> LoadGallogArticles()
+        public async Task<List<ArticleInformation>> LoadGallogArticles()
         {
             string html = "";
             int articleCounts;
             int pageCnts;
 
-            List<ArticleInfo> articleList = new List<ArticleInfo>();
+            List<ArticleInformation> articleList = new List<ArticleInformation>();
 
             try
             {
@@ -94,7 +94,7 @@ namespace DCAdapter
             // 총 페이지 수만큼 반복하여 총 글 목록을 리스트에 저장함.
             for (int i = 0; i < pageCnts; i++)
             {
-                List<ArticleInfo> newArticleList = null;
+                List<ArticleInformation> newArticleList = null;
                 try
                 {
                     newArticleList = await LoadArticleListAsync(i + 1);
@@ -132,13 +132,13 @@ namespace DCAdapter
         /// 갤로그의 댓글 목록을 불러옵니다.
         /// </summary>
         /// <returns>갤로그의 댓글 목록을 반환합니다.</returns>
-        public async Task<List<CommentInfo>> LoadGallogComments()
+        public async Task<List<CommentInformation>> LoadGallogComments()
         {
             string html = "";
             int commentCounts;
             int pageCnts;
 
-            List<CommentInfo> commentList = new List<CommentInfo>();
+            List<CommentInformation> commentList = new List<CommentInformation>();
 
             try
             {
@@ -155,7 +155,7 @@ namespace DCAdapter
             
             for (int i = 0; i < pageCnts; i++)
             {
-                List<CommentInfo> newCommentList = null;
+                List<CommentInformation> newCommentList = null;
                 try
                 {
                     newCommentList = await LoadCommentListAsync(i + 1);
@@ -193,10 +193,10 @@ namespace DCAdapter
         /// </summary>
         /// <param name="page">요청할 페이지 번호</param>
         /// <returns>해당 페이지의 글 목록</returns>
-        private async Task<List<ArticleInfo>> LoadArticleListAsync(int page)
+        private async Task<List<ArticleInformation>> LoadArticleListAsync(int page)
         {
             string html = await GetGallogListPageAsync(user_id, page, 1);
-            List<ArticleInfo> articleList = await HtmlParser.GetArticleListAsync(html);
+            List<ArticleInformation> articleList = await HtmlParser.GetArticleListAsync(html);
 
             return articleList;
         }
@@ -206,10 +206,10 @@ namespace DCAdapter
         /// </summary>
         /// <param name="page">요청할 페이지 번호</param>
         /// <returns>해당 페이지의 댓글 목록</returns>
-        private async Task<List<CommentInfo>> LoadCommentListAsync(int page)
+        private async Task<List<CommentInformation>> LoadCommentListAsync(int page)
         {
             string html = await GetGallogListPageAsync(user_id, 1, page);
-            List<CommentInfo> articleList = await HtmlParser.GetCommentListAsync(html);
+            List<CommentInformation> articleList = await HtmlParser.GetCommentListAsync(html);
 
             return articleList;
         }
@@ -224,9 +224,9 @@ namespace DCAdapter
         /// <param name="searchPage">검색 페이지</param>
         /// <param name="cont">검색이 계속되는지 여부</param>
         /// <returns>검색된 글 목록</returns>
-        public async Task<Tuple<List<ArticleInfo>, int, int, bool>> SearchArticles(string gall_id, GalleryType gallType, string nickname, int searchPos, int searchPage, bool cont)
+        public async Task<Tuple<List<ArticleInformation>, int, int, bool>> SearchArticles(string gall_id, GalleryType gallType, string nickname, int searchPos, int searchPage, bool cont)
         {
-            List<ArticleInfo> searchedArticleList = new List<ArticleInfo>();
+            List<ArticleInformation> searchedArticleList = new List<ArticleInformation>();
             int maxPage = 1;
 
             cont = false;
@@ -275,7 +275,7 @@ namespace DCAdapter
 
                 int tmpPos = searchPos;
 
-                List<ArticleInfo> newSearchedList = HtmlParser.GetSearchedArticleList(searchHtml, gall_id, nickname, gallType, LoginInfo.IsLoggedIn, ref searchPos, out maxPage);
+                List<ArticleInformation> newSearchedList = HtmlParser.GetSearchedArticleList(searchHtml, gall_id, nickname, gallType, LoginInfo.IsLoggedIn, ref searchPos, out maxPage);
 
                 searchedArticleList.AddRange(newSearchedList);
 
@@ -296,10 +296,10 @@ namespace DCAdapter
                 cont = false;
             }
 
-            return new Tuple<List<ArticleInfo>, int, int, bool>(searchedArticleList, searchPos, searchPage, cont);
+            return new Tuple<List<ArticleInformation>, int, int, bool>(searchedArticleList, searchPos, searchPage, cont);
         }
         
-        public async Task<ArticleInfo> DeleteArticle(ArticleInfo info, bool both)
+        public async Task<ArticleInformation> DeleteArticle(ArticleInformation info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
@@ -330,7 +330,7 @@ namespace DCAdapter
             return await DeleteArticle(info, GalleryType.Normal, both);
         }
         
-        public async Task<ArticleInfo> DeleteArticle(ArticleInfo info, GalleryType gallType, bool both)
+        public async Task<ArticleInformation> DeleteArticle(ArticleInformation info, GalleryType gallType, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
@@ -395,7 +395,7 @@ namespace DCAdapter
             return info;
         }
         
-        public async Task<CommentInfo> DeleteComment(CommentInfo info, bool both)
+        public async Task<CommentInformation> DeleteComment(CommentInformation info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;
@@ -427,7 +427,7 @@ namespace DCAdapter
             return await DeleteComment(info, true, both);
         }
         
-        public async Task<CommentInfo> DeleteComment(CommentInfo info, bool actualDelete, bool both)
+        public async Task<CommentInformation> DeleteComment(CommentInformation info, bool actualDelete, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
             int delay = 50;

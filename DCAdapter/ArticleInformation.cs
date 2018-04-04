@@ -7,24 +7,20 @@ using System.Threading.Tasks;
 namespace DCAdapter
 {
     /// <summary>
-    /// 삭제할 댓글 정보를 표시합니다.
+    /// 삭제할 글 정보를 표시합니다.
     /// </summary>
-    public class CommentInfo
+    public class ArticleInformation
     {
         /// <summary>
-        /// 댓글의 닉네임
+        /// 글 제목
         /// </summary>
-        public string Name;
+        public string Title;
         /// <summary>
-        /// 댓글 내용
-        /// </summary>
-        public string Content;
-        /// <summary>
-        /// 댓글 작성일
+        /// 글 작성일
         /// </summary>
         public string Date;
         /// <summary>
-        /// 댓글의 삭제 URL
+        /// 글의 삭제 URL
         /// </summary>
         public string DeleteUrl;
         /// <summary>
@@ -39,7 +35,7 @@ namespace DCAdapter
         /// 삭제 메시지. 삭제 에러 발생시 사용.
         /// </summary>
         public string DeleteMessage;
-        public GallogCommentDeleteParameter GallogDeleteParameter;
-        public GalleryCommentDeleteParameter GalleryDeleteParameter;
+        public GallogArticleDeleteParameter GallogDeleteParameter;
+        public GalleryArticleDeleteParameter GalleryDeleteParameter;
     }
 }

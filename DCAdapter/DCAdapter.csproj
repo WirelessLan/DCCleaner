@@ -47,14 +47,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Crypt.cs" />
+    <Compile Include="Cryption.cs" />
     <Compile Include="GalleryArticleDeleteParameter.cs" />
     <Compile Include="GalleryCommentDeleteParameter.cs" />
     <Compile Include="GallogArticleDeleteParameter.cs" />
     <Compile Include="GallogCommentDeleteParameter.cs" />
     <Compile Include="JSParser.cs" />
-    <Compile Include="ArticleInfo.cs" />
-    <Compile Include="CommentInfo.cs" />
+    <Compile Include="ArticleInformation.cs" />
+    <Compile Include="CommentInformation.cs" />
     <Compile Include="DCConnector.cs" />
     <Compile Include="DeleteResult.cs" />
     <Compile Include="GalleryType.cs" />

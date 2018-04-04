@@ -11,9 +11,9 @@ namespace DCCleaner
     public partial class Frm_Cleaner : Form
     {
         DCConnector conn;
-        List<ArticleInfo> articleList = null;
-        List<CommentInfo> commentList = null;
-        List<ArticleInfo> searchedList = null;
+        List<ArticleInformation> articleList = null;
+        List<CommentInformation> commentList = null;
+        List<ArticleInformation> searchedList = null;
         bool isBusy = false;
         bool isSearching = false;
 
@@ -148,8 +148,8 @@ namespace DCCleaner
 
             for (int i = 0; i < delCnt; i++)
             {
-                ArticleInfo info = articleList[rmIdx];
-                ArticleInfo res = null;
+                ArticleInformation info = articleList[rmIdx];
+                ArticleInformation res = null;
                 try
                 {
                     res = await conn.DeleteArticle(info, both);
@@ -235,8 +235,8 @@ namespace DCCleaner
 
             for (int i = 0; i < delCnt; i++)
             {
-                CommentInfo info = commentList[rmIdx];
-                CommentInfo res = null;
+                CommentInformation info = commentList[rmIdx];
+                CommentInformation res = null;
                 try
                 {
                     res = await conn.DeleteComment(info, both);
@@ -316,7 +316,7 @@ namespace DCCleaner
                 return;
 
             int selectedIdx = dgv_ArticleList.SelectedRows[0].Index;
-            ArticleInfo target = articleList[selectedIdx];
+            ArticleInformation target = articleList[selectedIdx];
 
             if (isBusy)
                 return;
@@ -385,7 +385,7 @@ namespace DCCleaner
                 return;
 
             int selectedIdx = dgv_CommentList.SelectedRows[0].Index;
-            CommentInfo target = commentList[selectedIdx];
+            CommentInformation target = commentList[selectedIdx];
 
             if (isBusy)
                 return;
@@ -446,7 +446,7 @@ namespace DCCleaner
                 return;
 
             int selectedIdx = dgv_ArticleList.SelectedRows[0].Index;
-            ArticleInfo target = articleList[selectedIdx];
+            ArticleInformation target = articleList[selectedIdx];
 
             string msg = "갤러리 삭제 : " + (target.IsGalleryDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
                        + "갤로그 삭제 : " + (target.IsGallogDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
@@ -475,7 +475,7 @@ namespace DCCleaner
                 return;
 
             int selectedIdx = dgv_CommentList.SelectedRows[0].Index;
-            CommentInfo target = commentList[selectedIdx];
+            CommentInformation target = commentList[selectedIdx];
 
             string msg = "갤러리 삭제 : " + (target.IsGalleryDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
                        + "갤로그 삭제 : " + (target.IsGallogDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
@@ -488,7 +488,7 @@ namespace DCCleaner
         {
             dgv_ArticleList.Rows.Clear();
 
-            foreach (ArticleInfo info in articleList)
+            foreach (ArticleInformation info in articleList)
             {
                 dgv_ArticleList.Rows.Add(info.Title);
             }
@@ -501,7 +501,7 @@ namespace DCCleaner
         {
             dgv_CommentList.Rows.Clear();
 
-            foreach (CommentInfo info in commentList)
+            foreach (CommentInformation info in commentList)
             {
                 dgv_CommentList.Rows.Add(info.Name, info.Content, info.Date);
             }
@@ -550,7 +550,7 @@ namespace DCCleaner
             if (searchedList != null)
                 searchedList.Clear();
             else
-                searchedList = new List<ArticleInfo>();
+                searchedList = new List<ArticleInformation>();
 
             string gall_id, nickname;
             gall_id = tb_SearchGalleryID.Text.Trim();
@@ -567,8 +567,8 @@ namespace DCCleaner
             int pos = 0;
             int page = 1;
             bool cont = false;
-            List<ArticleInfo> newSearchedList;
-            Tuple<List<ArticleInfo>, int, int, bool> req = null;
+            List<ArticleInformation> newSearchedList;
+            Tuple<List<ArticleInformation>, int, int, bool> req = null;
 
             isBusy = true;
             isSearching = true;
@@ -626,9 +626,9 @@ namespace DCCleaner
             SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
         }
 
-        private void LoadSearchedList(List<ArticleInfo> searchedList)
+        private void LoadSearchedList(List<ArticleInformation> searchedList)
         {
-            foreach (ArticleInfo info in searchedList)
+            foreach (ArticleInformation info in searchedList)
             {
                 dgv_SearchArticle.Rows.Add(info.Title, info.Date);
             }
@@ -671,8 +671,8 @@ namespace DCCleaner
 
             for (int i = 0; i < delCnt; i++)
             {
-                ArticleInfo info = searchedList[rmIdx];
-                ArticleInfo res = null;
+                ArticleInformation info = searchedList[rmIdx];
+                ArticleInformation res = null;
                 try
                 {
                     if (!conn.LoginInfo.IsLoggedIn)
@@ -741,7 +741,7 @@ namespace DCCleaner
                 return;
 
             int selectedIdx = dgv_SearchArticle.SelectedRows[0].Index;
-            ArticleInfo target = searchedList[selectedIdx];
+            ArticleInformation target = searchedList[selectedIdx];
 
             string msg = "상태 : " + (target.IsGalleryDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
                        + "메시지 : " + (target.DeleteMessage);
@@ -777,7 +777,7 @@ namespace DCCleaner
                 return;
 
             int selectedIdx = dgv_SearchArticle.SelectedRows[0].Index;
-            ArticleInfo target = searchedList[selectedIdx];
+            ArticleInformation target = searchedList[selectedIdx];
 
             if (isBusy)
                 return;
