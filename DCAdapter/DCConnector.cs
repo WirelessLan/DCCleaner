@@ -37,7 +37,7 @@ namespace DCAdapter
                 return false;
             }
 
-            LoginInfo.Status = await RequestLoginAsync(id, pw);
+            LoginInfo.Status = await PostLoginAsync(id, pw);
 
             if (LoginInfo.Status == LoginStatus.Success)
             {
@@ -80,7 +80,7 @@ namespace DCAdapter
             try
             {
                 // 갤로그의 HTML 소스를 요청
-                html = await RequestGallogMainPage(user_id);
+                html = await GetGallogMainPageAsync(user_id);
             }
             catch
             {
@@ -88,7 +88,7 @@ namespace DCAdapter
             }
 
             // 갤로그의 HTML 소스에서 총 쓴 글의 갯수를 가져와서 총 페이지 갯수를 지정.
-            articleCounts = HtmlParser.GetArticleCounts(html);
+            articleCounts = await HtmlParser.GetArticleCountAsync(html);
             pageCnts = (int)(articleCounts / 10) + (articleCounts % 10 > 0 ? 1 : 0);
 
             // 총 페이지 수만큼 반복하여 총 글 목록을 리스트에 저장함.
@@ -97,7 +97,7 @@ namespace DCAdapter
                 List<ArticleInfo> newArticleList = null;
                 try
                 {
-                    newArticleList = await LoadArticleList(i + 1);
+                    newArticleList = await LoadArticleListAsync(i + 1);
                 }
                 catch
                 {
@@ -106,7 +106,7 @@ namespace DCAdapter
                         try
                         {
                             await Task.Delay(200);
-                            newArticleList = await LoadArticleList(i + 1);
+                            newArticleList = await LoadArticleListAsync(i + 1);
                         }
                         catch
                         {
@@ -143,14 +143,14 @@ namespace DCAdapter
             try
             {
                 // 갤로그의 HTML 소스를 요청
-                html = await RequestGallogMainPage(this.user_id);
+                html = await GetGallogMainPageAsync(this.user_id);
             }
             catch
             {
                 return null;
             }
 
-            commentCounts = HtmlParser.GetCommentCounts(html);
+            commentCounts = await HtmlParser.GetCommentCountAsync(html);
             pageCnts = (int)(commentCounts / 10) + (commentCounts % 10 > 0 ? 1 : 0);
             
             for (int i = 0; i < pageCnts; i++)
@@ -158,7 +158,7 @@ namespace DCAdapter
                 List<CommentInfo> newCommentList = null;
                 try
                 {
-                    newCommentList = await LoadCommentList(i + 1);
+                    newCommentList = await LoadCommentListAsync(i + 1);
                 }
                 catch
                 {
@@ -167,7 +167,7 @@ namespace DCAdapter
                         try
                         {
                             await Task.Delay(200);
-                            newCommentList = await LoadCommentList(i + 1);
+                            newCommentList = await LoadCommentListAsync(i + 1);
                         }
                         catch
                         {
@@ -193,10 +193,10 @@ namespace DCAdapter
         /// </summary>
         /// <param name="page">요청할 페이지 번호</param>
         /// <returns>해당 페이지의 글 목록</returns>
-        private async Task<List<ArticleInfo>> LoadArticleList(int page)
+        private async Task<List<ArticleInfo>> LoadArticleListAsync(int page)
         {
-            string html = await RequestGallogListPage(user_id, page, 1);
-            List<ArticleInfo> articleList = HtmlParser.GetArticleList(html);
+            string html = await GetGallogListPageAsync(user_id, page, 1);
+            List<ArticleInfo> articleList = await HtmlParser.GetArticleListAsync(html);
 
             return articleList;
         }
@@ -206,10 +206,10 @@ namespace DCAdapter
         /// </summary>
         /// <param name="page">요청할 페이지 번호</param>
         /// <returns>해당 페이지의 댓글 목록</returns>
-        private async Task<List<CommentInfo>> LoadCommentList(int page)
+        private async Task<List<CommentInfo>> LoadCommentListAsync(int page)
         {
-            string html = await RequestGallogListPage(user_id, 1, page);
-            List<CommentInfo> articleList = HtmlParser.GetCommentList(html);
+            string html = await GetGallogListPageAsync(user_id, 1, page);
+            List<CommentInfo> articleList = await HtmlParser.GetCommentListAsync(html);
 
             return articleList;
         }
@@ -238,7 +238,7 @@ namespace DCAdapter
 
                 try
                 {
-                    req = await RequestGalleryNicknameSearchPage(gall_id, gallType, nickname, searchPos, searchPage);
+                    req = await GetGalleryNicknameSearchPageAsync(gall_id, gallType, nickname, searchPos, searchPage);
                 }
                 catch (Exception ex)
                 {
@@ -254,7 +254,7 @@ namespace DCAdapter
                         try
                         {
                             await Task.Delay(500);
-                            req = await RequestGalleryNicknameSearchPage(gall_id, gallType, nickname, searchPos, searchPage);
+                            req = await GetGalleryNicknameSearchPageAsync(gall_id, gallType, nickname, searchPos, searchPage);
 
                             if (req != null && !string.IsNullOrWhiteSpace(req.Item1))
                                 break;
@@ -307,7 +307,7 @@ namespace DCAdapter
             GallogArticleDeleteParameters delParams = null;
             try
             {
-                delParams = await this.GetDeleteArticleInfo(info.DeleteUrl);
+                delParams = await this.GetDeleteArticleInfoAsync(info.DeleteUrl);
             }
             catch(Exception e)
             {
@@ -339,9 +339,9 @@ namespace DCAdapter
             try
             {
                 if (LoginInfo.IsLoggedIn)
-                    res1 = await RequestDeleteGalleryArticle(info.GalleryArticleDeleteParameters, gallType, delay);
+                    res1 = await PostDeleteGalleryArticleAsync(info.GalleryArticleDeleteParameters, gallType, delay);
                 else
-                    res1 = await RequestDeleteGalleryFlowArticle(info.GalleryArticleDeleteParameters, gallType, delay);
+                    res1 = await PostDeleteGalleryFlowArticleAsync(info.GalleryArticleDeleteParameters, gallType, delay);
             }
             catch (Exception ex)
             {
@@ -369,7 +369,7 @@ namespace DCAdapter
 
                 try
                 {
-                    res2 = await RequestDeleteGallogArticle(info.GallogArticleDeleteParameters, delay);
+                    res2 = await PostDeleteGallogArticleAsync(info.GallogArticleDeleteParameters, delay);
                 }
                 catch (Exception ex)
                 {
@@ -403,7 +403,7 @@ namespace DCAdapter
 
             try
             {
-                delParams = await this.GetDeleteCommentInfo(info.DeleteUrl);
+                delParams = await this.GetDeleteCommentInfoAsync(info.DeleteUrl);
             }
             catch (Exception e)
             {
@@ -436,7 +436,7 @@ namespace DCAdapter
 
             try
             {
-                res1 = await RequestDeleteGalleryComment(info.GalleryCommentDeleteParameters);
+                res1 = await PostDeleteGalleryCommentAsync(info.GalleryCommentDeleteParameters);
             }
             catch (Exception ex)
             {
@@ -464,7 +464,7 @@ namespace DCAdapter
 
                 try
                 {
-                    res2 = await RequestDeleteGallogComment(info.GallogCommentDeleteParameters, delay);
+                    res2 = await PostDeleteGallogCommentAsync(info.GallogCommentDeleteParameters, delay);
                 }
                 catch (Exception ex)
                 {
@@ -492,18 +492,18 @@ namespace DCAdapter
             return info;
         }
         
-        private async Task<GallogArticleDeleteParameters> GetDeleteArticleInfo(string url)
+        private async Task<GallogArticleDeleteParameters> GetDeleteArticleInfoAsync(string url)
         {
-            string galHtml = await RequestDeleteGallogArticleSource(url, user_id);
-            GallogArticleDeleteParameters retParams = HtmlParser.GetDeleteGallogArticleParameters(galHtml);
+            string galHtml = await GetDeleteGallogArticlePageAsync(url, user_id);
+            GallogArticleDeleteParameters retParams = await HtmlParser.GetDeleteGallogArticleParameterAsync(galHtml);
             retParams.UserId = user_id;
             return retParams;
         }
         
-        private async Task<GallogCommentDeleteParameters> GetDeleteCommentInfo(string url)
+        private async Task<GallogCommentDeleteParameters> GetDeleteCommentInfoAsync(string url)
         {
-            string galHtml = await RequestDeleteGallogCommentSource(url, user_id);
-            GallogCommentDeleteParameters retParams = HtmlParser.GetDeleteGallogCommentParameters(galHtml);
+            string galHtml = await GetDeleteGallogCommentPageAsync(url, user_id);
+            GallogCommentDeleteParameters retParams = await HtmlParser.GetDeleteGallogCommentParameterAsync(galHtml);
             retParams.UserId = user_id;
             return retParams;
         }

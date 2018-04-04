@@ -34,8 +34,9 @@ namespace DCAdapter
             }
 
             if (retVal.Length > 0)
-                retVal = retVal.Substring(0, retVal.Length - 1);
-            return retVal;
+                return retVal.Substring(0, retVal.Length - 1);
+            else
+                return null;
         }
 
         public void Push(string key, string val) => Parameters.Add(key, val);

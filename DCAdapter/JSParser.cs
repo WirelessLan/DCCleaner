@@ -15,7 +15,7 @@ namespace DCAdapter
             value = null;
             encCode = null;
 
-#if false
+#if true
             Match encData = Regex.Match(script, "var _r = _d\\(\'(.*)\'\\)");
 #else
             Match encData = null;

@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using System.Web;
+using System.Threading.Tasks;
 
 namespace DCAdapter
 {
@@ -15,14 +16,17 @@ namespace DCAdapter
         /// </summary>
         /// <param name="html">갤로그의 HTML 소스</param>
         /// <returns>글 갯수</returns>
-        internal static int GetArticleCounts(string html)
+        internal static async Task<int> GetArticleCountAsync(string html)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
-            
-            HtmlNode cntNode = doc.DocumentNode.SelectSingleNode("//div[@id='statusDiv']/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/font[1]");
+            return await Task.Run(() =>
+            {
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(html);
 
-            return ExtractNumber(cntNode.InnerText);
+                HtmlNode cntNode = doc.DocumentNode.SelectSingleNode("//div[@id='statusDiv']/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/font[1]");
+
+                return ExtractNumberAsync(cntNode.InnerText);
+            });
         }
 
         /// <summary>
@@ -30,14 +34,17 @@ namespace DCAdapter
         /// </summary>
         /// <param name="html">갤로그의 HTML 소스</param>
         /// <returns>댓글 갯수</returns>
-        internal static int GetCommentCounts(string html)
+        internal static async Task<int> GetCommentCountAsync(string html)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
+            return await Task.Run(() =>
+            {
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(html);
 
-            HtmlNode cntNode = doc.DocumentNode.SelectSingleNode("//div[@id='statusDiv']/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[3]/td[1]/font[1]");
-            
-            return ExtractNumber(cntNode.InnerText);
+                HtmlNode cntNode = doc.DocumentNode.SelectSingleNode("//div[@id='statusDiv']/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[3]/td[1]/font[1]");
+
+                return ExtractNumberAsync(cntNode.InnerText);
+            });
         }
 
         /// <summary>
@@ -45,11 +52,14 @@ namespace DCAdapter
         /// </summary>
         /// <param name="text">정수값을 추출할 문자열</param>
         /// <returns>추출된 정수</returns>
-        private static int ExtractNumber(string text)
+        private static async Task<int> ExtractNumberAsync(string text)
         {
-            string result = Regex.Replace(text, @"[^\d]", "");
+            return await Task.Run(() =>
+            {
+                string result = Regex.Replace(text, @"[^\d]", "");
 
-            return int.Parse(result);
+                return int.Parse(result);
+            });
         }
 
         /// <summary>
@@ -59,245 +69,258 @@ namespace DCAdapter
         /// <param name="gallType">갤러리 구분</param>
         /// <param name="delete_Params">글 삭제에 필요한 파라미터</param>
         /// <param name="lately_gallery">최근 방문한 갤러리</param>
-        internal static void GetDeleteArticleParameters(string html, GalleryType gallType, out ParameterStorage delete_Params, out string lately_gallery)
+        internal static async Task<Tuple<ParameterStorage, string>> GetDeleteArticleParameterAsync(string html, GalleryType gallType)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
-
-            delete_Params = new ParameterStorage();
-            lately_gallery = null;
-
-            HtmlNode deleteNode = null;
-            try
+            return await Task.Run(() =>
             {
-                deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
-                lately_gallery = doc.GetElementbyId("lately_gallery").GetAttributeValue("value", "");
-            }
-            catch { }
+                string lately_gallery = null;
+                ParameterStorage delete_Params = new ParameterStorage();
 
-            // 삭제 노드가 없는 경우 이미 삭제된 글이거나 오류
-            if(deleteNode == null)
-            {
-                if(html.Contains("/error/deleted"))
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(html);
+
+                HtmlNode deleteNode = null;
+                try
                 {
-                    throw new Exception("이미 삭제된 글입니다.");
-                }
-                else if (doc.GetElementbyId("password_confirm") != null)
-                {
-                    throw new Exception("이미 삭제된 글입니다.");
-                }
-                else
-                {
-                    throw new Exception("알 수 없는 오류입니다."); 
-                }
-            }
-
-            // 회원글인데 비밀번호 입력하는 페이지인 경우 이미 삭제된 글
-            if (deleteNode.Attributes["action"].Value.Contains("delete_password_submit"))
-            {
-                throw new Exception("이미 삭제된 글입니다.");
-            }
-
-            foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
-            {
-                delete_Params.Push(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
-            }
-
-            string jsParamName, jsParamValue, jsEncCode;
-            string jsScript = "";
-
-            foreach(HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
-            {
-                jsScript += scriptNode.InnerHtml;
-            }
-
-            if (jsScript == "")
-            {
-                throw new Exception("알 수 없는 오류입니다.");
-            }
-            // 글 삭제시 실행되는 스크립트의 추가 값을 가져옴
-            JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
-
-            delete_Params.Push(jsParamName, jsParamValue);
-            if(gallType == GalleryType.Normal)
-                delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
-        }
-
-        internal static void GetDeleteFlowArticleParameters(string html, GalleryType gallType, out ParameterStorage delete_Params, out string lately_gallery)
-        {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
-
-            delete_Params = new ParameterStorage();
-
-            HtmlNode deleteNode = null;
-            lately_gallery = null;
-
-            try
-            {
-                deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
-                if(gallType == GalleryType.Normal)
+                    deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
                     lately_gallery = doc.GetElementbyId("lately_gallery").GetAttributeValue("value", "");
-            }
-            catch { }
+                }
+                catch { }
 
-            if (deleteNode == null)
-            {
-                if (html.Contains("/error/deleted"))
+                // 삭제 노드가 없는 경우 이미 삭제된 글이거나 오류
+                if (deleteNode == null)
                 {
+                    if (html.Contains("/error/deleted"))
+                    {
+                        throw new Exception("이미 삭제된 글입니다.");
+                    }
+                    else if (doc.GetElementbyId("password_confirm") != null)
+                    {
+                        throw new Exception("이미 삭제된 글입니다.");
+                    }
+                    else
+                    {
+                        throw new Exception("알 수 없는 오류입니다.");
+                    }
+                }
+
+                // 회원글인데 비밀번호 입력하는 페이지인 경우 이미 삭제된 글
+                if (deleteNode.Attributes["action"].Value.Contains("delete_password_submit"))
                     throw new Exception("이미 삭제된 글입니다.");
-                }
-                else
-                {
+
+                foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
+                    delete_Params.Push(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
+
+                string jsParamName, jsParamValue, jsEncCode;
+                string jsScript = "";
+
+                foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
+                    jsScript += scriptNode.InnerHtml;
+
+                if (jsScript == "")
                     throw new Exception("알 수 없는 오류입니다.");
-                }
-            }
 
-            foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
-            {
-                delete_Params.Push(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
-            }
+                // 글 삭제시 실행되는 스크립트의 추가 값을 가져옴
+                JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
 
-            string jsParamName, jsParamValue, jsEncCode;
-            string jsScript = "";
+                delete_Params.Push(jsParamName, jsParamValue);
+                if (gallType == GalleryType.Normal)
+                    delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
 
-            foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
-            {
-                jsScript += scriptNode.InnerHtml;
-            }
-
-            if (jsScript == "")
-            {
-                throw new Exception("알 수 없는 오류입니다.");
-            }
-            JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType,  out jsEncCode, out jsParamName, out jsParamValue);
-
-            delete_Params.Push(jsParamName, jsParamValue);
-            if (gallType == GalleryType.Normal)
-                delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
+                return new Tuple<ParameterStorage, string>(delete_Params, lately_gallery);
+            });
         }
 
-        internal static void GetDeleteCommentParameters(string pageHtml, out string check7)
+        internal static async Task<Tuple<ParameterStorage, string>> GetDeleteFlowArticleParameterAsync(string html, GalleryType gallType)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(pageHtml);
-            check7 = null;
-            
-            HtmlNode chk7Node = doc.DocumentNode.SelectSingleNode("//input[@id='check_7']");
-
-            if (chk7Node == null)
+            return await Task.Run(() =>
             {
-                if (pageHtml.Contains("/error/deleted") || pageHtml.Contains("/error/comment_error"))
+                ParameterStorage delete_Params = new ParameterStorage();
+                string lately_gallery = null;
+
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(html);
+
+                HtmlNode deleteNode = null;
+                try
                 {
-                    throw new Exception("이미 삭제된 리플입니다.");
+                    deleteNode = doc.GetElementbyId("id").ParentNode.SelectSingleNode(".//form");
+                    if (gallType == GalleryType.Normal)
+                        lately_gallery = doc.GetElementbyId("lately_gallery").GetAttributeValue("value", "");
                 }
-                else
+                catch { }
+
+                if (deleteNode == null)
                 {
+                    if (html.Contains("/error/deleted"))
+                    {
+                        throw new Exception("이미 삭제된 글입니다.");
+                    }
+                    else
+                    {
+                        throw new Exception("알 수 없는 오류입니다.");
+                    }
+                }
+
+                foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
+                    delete_Params.Push(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
+
+                string jsParamName, jsParamValue, jsEncCode;
+                string jsScript = "";
+
+                foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
+                    jsScript += scriptNode.InnerHtml;
+
+                if (jsScript == "")
                     throw new Exception("알 수 없는 오류입니다.");
-                }
-            }
-            
-            check7 = chk7Node.Attributes["value"].Value;
+
+                JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
+
+                delete_Params.Push(jsParamName, jsParamValue);
+                if (gallType == GalleryType.Normal)
+                    delete_Params["service_code"] = Crypt.DecryptCode(jsEncCode, delete_Params["service_code"]);
+
+                return new Tuple<ParameterStorage, string>(delete_Params, lately_gallery);
+            });
         }
 
-        internal static List<CommentInfo> GetCommentList(string html)
+        internal static async Task<string> GetDeleteCommentParameterAsync(string pageHtml)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
-
-            List<CommentInfo> coms = new List<CommentInfo>();
-
-            foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//table[@bgcolor='#F2F2F5']/tr"))
+            return await Task.Run(() =>
             {
-                if (node.Descendants("td").Count() == 6)
+                string check7 = null;
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(pageHtml);
+
+                HtmlNode chk7Node = doc.DocumentNode.SelectSingleNode("//input[@id='check_7']");
+
+                if (chk7Node == null)
                 {
-                    string name = node.SelectSingleNode("./td[1]").InnerText;
-                    name = HttpUtility.HtmlDecode(name).Trim();
-                    string content = HttpUtility.HtmlDecode(node.SelectSingleNode("./td[3]").InnerText);
-                    string date = node.SelectSingleNode("./td[5]").InnerText;
-
-                    string url = Utility.GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);
-
-                    coms.Add(new CommentInfo() { Name = name, Content = content, Date = date, DeleteUrl = url });
+                    if (pageHtml.Contains("/error/deleted") || pageHtml.Contains("/error/comment_error"))
+                    {
+                        throw new Exception("이미 삭제된 리플입니다.");
+                    }
+                    else
+                    {
+                        throw new Exception("알 수 없는 오류입니다.");
+                    }
                 }
-            }
 
-            return coms;
+                check7 = chk7Node.Attributes["value"].Value;
+                return check7;
+            });
         }
 
-        internal static List<ArticleInfo> GetArticleList(string html)
+        internal static async Task<List<CommentInfo>> GetCommentListAsync(string html)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(html);
-
-            List<ArticleInfo> arts = new List<ArticleInfo>();
-
-            foreach(HtmlNode node in doc.DocumentNode.SelectNodes("//img[@src='http://wstatic.dcinside.com/gallery/skin/gallog/icon_01.gif']"))
+            return await Task.Run(() =>
             {
-                if (node.Attributes["onClick"] != null)
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(html);
+
+                List<CommentInfo> coms = new List<CommentInfo>();
+
+                foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//table[@bgcolor='#F2F2F5']/tr"))
                 {
-                    string title = node.ParentNode.PreviousSibling.PreviousSibling.PreviousSibling.PreviousSibling.InnerText;
-                    title = HttpUtility.HtmlDecode(title).Trim();
-                    string url = Utility.GetAbsoulteURL(node.Attributes["onClick"].Value);
-                    string date = node.ParentNode.InnerText;
+                    if (node.Descendants("td").Count() == 6)
+                    {
+                        string name = node.SelectSingleNode("./td[1]").InnerText;
+                        name = HttpUtility.HtmlDecode(name).Trim();
+                        string content = HttpUtility.HtmlDecode(node.SelectSingleNode("./td[3]").InnerText);
+                        string date = node.SelectSingleNode("./td[5]").InnerText;
 
-                    arts.Add(new ArticleInfo() { Title = title, DeleteUrl = url, Date = date });
+                        string url = Utility.GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);
+
+                        coms.Add(new CommentInfo() { Name = name, Content = content, Date = date, DeleteUrl = url });
+                    }
                 }
-            }
 
-            return arts;
+                return coms;
+            });
         }
 
-        internal static GallogArticleDeleteParameters GetDeleteGallogArticleParameters(string pageHtml)
+        internal static async Task<List<ArticleInfo>> GetArticleListAsync(string html)
         {
-            GallogArticleDeleteParameters newParams = new GallogArticleDeleteParameters();
+            return await Task.Run(() =>
+            {
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(html);
 
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(pageHtml);
-            
-            HtmlNode parentNode = doc.GetElementbyId("dTp").ParentNode;
-            HtmlNode gallNode = parentNode.SelectSingleNode(".//input[@name='id']");
-            HtmlNode cidNode = parentNode.SelectSingleNode(".//input[@name='cid']");
-            HtmlNode artNode = parentNode.SelectSingleNode(".//input[@name='pno']");
-            HtmlNode logNode = parentNode.SelectSingleNode(".//input[@name='logNo']");
-            HtmlNode dcc_keyNode = doc.DocumentNode.SelectSingleNode("//input[@name='dcc_key']");
-            int inputCnt = doc.DocumentNode.Descendants("input").Count();
-            HtmlNode randomKeyNode = doc.DocumentNode.SelectSingleNode("//input[" + (inputCnt - 1) + "]");
-            
-            newParams.GalleryId = gallNode.Attributes["value"].Value;
-            newParams.GalleryNo = cidNode.Attributes["value"].Value;
-            newParams.ArticleId = artNode.Attributes["value"].Value;
-            newParams.LogNo = logNode.Attributes["value"].Value;
-            newParams.DCCKey = dcc_keyNode.Attributes["value"].Value;
-            newParams.AdditionalParameters.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
+                List<ArticleInfo> arts = new List<ArticleInfo>();
 
-            return newParams;
+                foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//img[@src='http://wstatic.dcinside.com/gallery/skin/gallog/icon_01.gif']"))
+                {
+                    if (node.Attributes["onClick"] != null)
+                    {
+                        string title = node.ParentNode.PreviousSibling.PreviousSibling.PreviousSibling.PreviousSibling.InnerText;
+                        title = HttpUtility.HtmlDecode(title).Trim();
+                        string url = Utility.GetAbsoulteURL(node.Attributes["onClick"].Value);
+                        string date = node.ParentNode.InnerText;
+
+                        arts.Add(new ArticleInfo() { Title = title, DeleteUrl = url, Date = date });
+                    }
+                }
+
+                return arts;
+            });
         }
 
-        internal static GallogCommentDeleteParameters GetDeleteGallogCommentParameters(string pageHtml)
+        internal static async Task<GallogArticleDeleteParameters> GetDeleteGallogArticleParameterAsync(string pageHtml)
         {
-            GallogCommentDeleteParameters newParams = new GallogCommentDeleteParameters();
+            return await Task.Run(() =>
+            {
+                GallogArticleDeleteParameters newParams = new GallogArticleDeleteParameters();
 
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(pageHtml);
-            
-            HtmlNode parentNode = doc.GetElementbyId("dTp").ParentNode;
-            HtmlNode idNode = parentNode.SelectSingleNode(".//input[@name='id']");
-            HtmlNode cidNode = parentNode.SelectSingleNode(".//input[@name='cid']");
-            HtmlNode artNode = parentNode.SelectSingleNode(".//input[@name='no']");
-            HtmlNode cNode = parentNode.SelectSingleNode(".//input[@name='c_no']");
-            HtmlNode logNode = parentNode.SelectSingleNode(".//input[@name='logNo']");
-            int inputCnt = doc.DocumentNode.Descendants("input").Count();
-            HtmlNode randomKeyNode = doc.DocumentNode.SelectSingleNode("//input[" + (inputCnt - 1) + "]");
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(pageHtml);
 
-            newParams.GalleryId = idNode.Attributes["value"].Value;
-            newParams.GalleryNo = cidNode.Attributes["value"].Value;
-            newParams.ArticleId = artNode.Attributes["value"].Value;
-            newParams.CommentId = cNode.Attributes["value"].Value;
-            newParams.LogNo = logNode.Attributes["value"].Value;
-            newParams.AdditionalParameters.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
+                HtmlNode parentNode = doc.GetElementbyId("dTp").ParentNode;
+                HtmlNode gallNode = parentNode.SelectSingleNode(".//input[@name='id']");
+                HtmlNode cidNode = parentNode.SelectSingleNode(".//input[@name='cid']");
+                HtmlNode artNode = parentNode.SelectSingleNode(".//input[@name='pno']");
+                HtmlNode logNode = parentNode.SelectSingleNode(".//input[@name='logNo']");
+                HtmlNode dcc_keyNode = doc.DocumentNode.SelectSingleNode("//input[@name='dcc_key']");
+                int inputCnt = doc.DocumentNode.Descendants("input").Count();
+                HtmlNode randomKeyNode = doc.DocumentNode.SelectSingleNode("//input[" + (inputCnt - 1) + "]");
 
-            return newParams;
+                newParams.GalleryId = gallNode.Attributes["value"].Value;
+                newParams.GalleryNo = cidNode.Attributes["value"].Value;
+                newParams.ArticleId = artNode.Attributes["value"].Value;
+                newParams.LogNo = logNode.Attributes["value"].Value;
+                newParams.DCCKey = dcc_keyNode.Attributes["value"].Value;
+                newParams.AdditionalParameters.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
+
+                return newParams;
+            });
+        }
+
+        internal static async Task<GallogCommentDeleteParameters> GetDeleteGallogCommentParameterAsync(string pageHtml)
+        {
+            return await Task.Run(() =>
+            {
+                GallogCommentDeleteParameters newParams = new GallogCommentDeleteParameters();
+
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(pageHtml);
+
+                HtmlNode parentNode = doc.GetElementbyId("dTp").ParentNode;
+                HtmlNode idNode = parentNode.SelectSingleNode(".//input[@name='id']");
+                HtmlNode cidNode = parentNode.SelectSingleNode(".//input[@name='cid']");
+                HtmlNode artNode = parentNode.SelectSingleNode(".//input[@name='no']");
+                HtmlNode cNode = parentNode.SelectSingleNode(".//input[@name='c_no']");
+                HtmlNode logNode = parentNode.SelectSingleNode(".//input[@name='logNo']");
+                int inputCnt = doc.DocumentNode.Descendants("input").Count();
+                HtmlNode randomKeyNode = doc.DocumentNode.SelectSingleNode("//input[" + (inputCnt - 1) + "]");
+
+                newParams.GalleryId = idNode.Attributes["value"].Value;
+                newParams.GalleryNo = cidNode.Attributes["value"].Value;
+                newParams.ArticleId = artNode.Attributes["value"].Value;
+                newParams.CommentId = cNode.Attributes["value"].Value;
+                newParams.LogNo = logNode.Attributes["value"].Value;
+                newParams.AdditionalParameters.Push(randomKeyNode.Attributes["name"].Value, randomKeyNode.Attributes["value"].Value);
+
+                return newParams;
+            });
         }
         
         internal static List<ArticleInfo> GetSearchedArticleList(string searchedHtml, string gall_id, string searchNick, GalleryType gallType, bool isFixed, ref int searchPos, out int maxPage)
@@ -418,25 +441,28 @@ namespace DCAdapter
             return searchedList;
         }
 
-        internal static ParameterStorage GetLoginParameter(string src)
+        internal static async Task<ParameterStorage> GetLoginParameterAsync(string src)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(src);
-
-            string jsScript = "";
-
-            foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
+            return await Task.Run(() =>
             {
-                jsScript += scriptNode.InnerHtml;
-            }
-            
-            if (jsScript == "")
-            {
-                throw new Exception("로그인 파라미터를 불러오는데 실패하였습니다.");
-            }
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(src);
 
-            // 로그인시 필요한 파라미터 정보들을 가져옴
-            return JSParser.ParseLoginParameters(jsScript);
+                string jsScript = "";
+
+                foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
+                {
+                    jsScript += scriptNode.InnerHtml;
+                }
+
+                if (jsScript == "")
+                {
+                    throw new Exception("로그인 파라미터를 불러오는데 실패하였습니다.");
+                }
+
+                // 로그인시 필요한 파라미터 정보들을 가져옴
+                return JSParser.ParseLoginParameters(jsScript);
+            });
         }
     }
 }

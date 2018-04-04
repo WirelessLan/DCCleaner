@@ -4,8 +4,6 @@ using System.Net;
 using System.Web;
 using System.Text;
 using System.Threading;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace DCAdapter
@@ -15,31 +13,33 @@ namespace DCAdapter
         /// <summary>
         /// 서버와의 통신에 사용되는 Fake User-Agent
         /// </summary>
-        static string _UserAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36";
-        private string _DefaultAcceptString = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
-        
-        private async Task<LoginStatus> RequestLoginAsync(string id, string pw, bool retry = true)
+        private readonly string _userAgent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36";
+        private readonly string _defaultAcceptString = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
+        private readonly string _gallogDomain = "http://gallog.dcinside.com/";
+
+        private async Task<LoginStatus> PostLoginAsync(string id, string pw, bool retry = true)
         {
             string gallUrl = "gallog";
             string gallogUrl = "http://gallog.dcinside.com/" + id;
             LoginStatus status = new LoginStatus();
 
             // 로그인 페이지에 한번은 접속해야 정상 동작함
-            Tuple<ParameterStorage, bool> reqResult;
-            ParameterStorage LoginParams = null;
+            string loginPageSrc = await GetLoginPageAsync(gallUrl);
+            if (loginPageSrc.Contains("로그인 되었습니다"))
+            {
+                status = LoginStatus.Success;
+                return status;
+            }
 
-            reqResult = await RequestLoginPage(gallUrl);
-            if (reqResult.Item2)
-                return LoginStatus.Success;
-            LoginParams = reqResult.Item1;
+            ParameterStorage LoginParams = await HtmlParser.GetLoginParameterAsync(loginPageSrc);
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/member_check.php");
 
-            request.Accept = _DefaultAcceptString;
+            request.Accept = _defaultAcceptString;
             request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
             request.CookieContainer = cookies;
-            request.UserAgent = _UserAgent;
+            request.UserAgent = _userAgent;
             request.Proxy = null;
             request.Headers.Add("Upgrade-Insecure-Requests", "1");
             request.Referer = "https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl);
@@ -74,28 +74,26 @@ namespace DCAdapter
                                 if (result.Contains(gallogUrl))
                                     status = LoginStatus.Success;
                                 else if (retry)
-                                    return await RequestLoginAsync(id, pw, false);
+                                    return await PostLoginAsync(id, pw, false);
                         }
                     }
                 }
                 else
-                {
                     status = LoginStatus.Unknown;
-                }
             }
 
             return status;
         }
 
-        private async Task<Tuple<ParameterStorage, bool>> RequestLoginPage(string gallUrl)
+        private async Task<string> GetLoginPageAsync(string gallUrl)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create("https://dcid.dcinside.com/join/login.php?s_url=" + HttpUtility.UrlEncode(gallUrl));
 
-            request.Accept = _DefaultAcceptString;
+            request.Accept = _defaultAcceptString;
             request.Method = "GET";
             request.Referer = gallUrl;
             request.CookieContainer = cookies;
-            request.UserAgent = _UserAgent;
+            request.UserAgent = _userAgent;
             request.Proxy = null;
 
             using (WebResponse response = await request.GetResponseAsync())
@@ -104,15 +102,7 @@ namespace DCAdapter
                 {
                     using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                     {
-                        string result = reader.ReadToEnd();
-
-                        if ((response as HttpWebResponse).Cookies["userAgent"] != null)
-                            _UserAgent = HttpUtility.UrlDecode((response as HttpWebResponse).Cookies["userAgent"].Value);
-
-                        if (result.Contains("로그인 되었습니다"))
-                            return new Tuple<ParameterStorage, bool>(null, true);
-
-                        return new Tuple<ParameterStorage, bool>(HtmlParser.GetLoginParameter(result), false);
+                        return reader.ReadToEnd();
                     }
                 }
                 else
@@ -120,15 +110,15 @@ namespace DCAdapter
             }
         }
 
-        private async Task<string> RequestGallogMainPage(string id)
+        private async Task<string> GetGallogMainPageAsync(string id)
         {
-            const string _gallogURL = "http://gallog.dcinside.com/";
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_gallogURL + id);
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_gallogDomain + id);
 
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
+            req.Method = "GET";
             req.CookieContainer = cookies;
             req.Proxy = null;
-            req.Referer = _gallogURL;
+            req.Referer = _gallogDomain;
 
             using (WebResponse res = await req.GetResponseAsync())
             {
@@ -138,7 +128,9 @@ namespace DCAdapter
                     {
                         using (StreamReader readStream = new StreamReader(responseStream, Encoding.UTF8))
                         {
-                            return readStream.ReadToEnd();
+                            string result = readStream.ReadToEnd();
+
+                            return result;
                         }
                     }
                 }
@@ -147,7 +139,7 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
         
-        private async Task<string> RequestGallogListPage(string user_id, int page, int cPage)
+        private async Task<string> GetGallogListPageAsync(string user_id, int page, int cPage)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_mainGallog.php";
             string referer = "http://gallog.dcinside.com/" + user_id;
@@ -156,9 +148,9 @@ namespace DCAdapter
 
             req.Host = "gallog.dcinside.com";
             req.Referer = referer;
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
+            //req.Headers.Add("Upgrade-Insecure-Requests", "1");
             req.Method = "GET";
             req.Proxy = null;
             req.Timeout = 10 * 1000; // 20초 timeout
@@ -173,7 +165,8 @@ namespace DCAdapter
                     {
                         using (StreamReader reader = new StreamReader(stream))
                         {
-                            return reader.ReadToEnd();
+                            string result = reader.ReadToEnd();
+                            return result;
                         }
                     }
                 }
@@ -183,7 +176,7 @@ namespace DCAdapter
         }
         
         private async Task<Tuple<string, int, int>>
-            RequestGalleryNicknameSearchPage(string gall_id, GalleryType gallType, string nickname, int searchPos, int searchPage)
+            GetGalleryNicknameSearchPageAsync(string gall_id, GalleryType gallType, string nickname, int searchPos, int searchPage)
         {
             string searchPath = null;
             string basePath = null;
@@ -208,12 +201,12 @@ namespace DCAdapter
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(searchPath);
 
-            req.Accept = _DefaultAcceptString;
+            req.Accept = _defaultAcceptString;
             req.Method = "GET";
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Referer = referer;
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.Host = host;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
 
@@ -246,20 +239,24 @@ namespace DCAdapter
             throw new Exception("알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> RequestDeleteGalleryArticle(GalleryArticleDeleteParameters info, GalleryType gallType, int delay)
+        private async Task<DeleteResult> PostDeleteGalleryArticleAsync(GalleryArticleDeleteParameters info, GalleryType gallType, int delay)
         {
-            string pageHtml = await RequestDeleteGalleryArticleSource(info.GalleryId, info.ArticleID, null, gallType);
+            string pageHtml = await GetDeleteGalleryArticlePageAsync(info.GalleryId, info.ArticleID, null, gallType);
+            Tuple<ParameterStorage, string> parseResult;
             ParameterStorage delete_Params = null;
             string lately_gallery = null;
             
             try
             {
-                HtmlParser.GetDeleteArticleParameters(pageHtml, gallType, out delete_Params, out lately_gallery);
+                parseResult = await HtmlParser.GetDeleteArticleParameterAsync(pageHtml, gallType);
             }
             catch (Exception e)
             {
                 return new DeleteResult(false, e.Message);
             }
+
+            delete_Params = parseResult.Item1;
+            lately_gallery = parseResult.Item2;
 
             if(gallType == GalleryType.Normal)
                 cookies.Add(new Cookie("lately_cookie", HttpUtility.UrlEncode(lately_gallery)) { Domain="dcinside.com" });
@@ -291,7 +288,7 @@ namespace DCAdapter
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Referer = referer;
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.Host = host;
             req.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
@@ -336,21 +333,25 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> RequestDeleteGalleryFlowArticle(GalleryArticleDeleteParameters delParam, GalleryType gallType, int delay)
+        private async Task<DeleteResult> PostDeleteGalleryFlowArticleAsync(GalleryArticleDeleteParameters delParam, GalleryType gallType, int delay)
         {
-            string pageHtml = await RequestDeleteGalleryArticleSource(delParam.GalleryId, delParam.ArticleID, null, gallType);
+            string pageHtml = await GetDeleteGalleryArticlePageAsync(delParam.GalleryId, delParam.ArticleID, null, gallType);
+            Tuple<ParameterStorage, string> parseResult;
             ParameterStorage delete_Params = null;
             string lately_gallery = null;
 
             try
             {
-                HtmlParser.GetDeleteFlowArticleParameters(pageHtml, gallType, out delete_Params, out lately_gallery);
+                parseResult = await HtmlParser.GetDeleteFlowArticleParameterAsync(pageHtml, gallType);
             }
             catch (Exception e)
             {
                 return new DeleteResult(false, e.Message);
             }
-            
+
+            delete_Params = parseResult.Item1;
+            lately_gallery = parseResult.Item2;
+
             if (gallType == GalleryType.Normal)
                 cookies.Add(new Cookie("lately_cookie", HttpUtility.UrlEncode(lately_gallery)) { Domain = "dcinside.com" });
 
@@ -381,7 +382,7 @@ namespace DCAdapter
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Referer = referer;
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.Host = host;
             req.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
@@ -409,7 +410,7 @@ namespace DCAdapter
                                 if (gallType == GalleryType.Normal)
                                     return new DeleteResult(true, "");
                                 else
-                                    return await RequestDeleteMinorGalleryFlowArticle(delParam, result.Replace("true||", ""));
+                                    return await PostDeleteMinorGalleryFlowArticleAsync(delParam, result.Replace("true||", ""));
                             }
                             else if (result == "false||비밀번호 인증에 실패하였습니다. 다시 시도해주세요" || 
                                 result == "false|| 비밀번호가 맞지 않습니다. 다시 시도해주세요" ||
@@ -429,20 +430,22 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> RequestDeleteMinorGalleryFlowArticle(GalleryArticleDeleteParameters delParam, string key)
+        private async Task<DeleteResult> PostDeleteMinorGalleryFlowArticleAsync(GalleryArticleDeleteParameters delParam, string key)
         {
-            string pageHtml = await RequestDeleteGalleryArticleSource(delParam.GalleryId, delParam.ArticleID, key, GalleryType.Minor);
+            string pageHtml = await GetDeleteGalleryArticlePageAsync(delParam.GalleryId, delParam.ArticleID, key, GalleryType.Minor);
+            Tuple<ParameterStorage, string> parseResult;
             ParameterStorage delete_Params = null;
-            string nulString = null;
 
             try
             {
-                HtmlParser.GetDeleteFlowArticleParameters(pageHtml, GalleryType.Minor, out delete_Params, out nulString);
+                parseResult = await HtmlParser.GetDeleteFlowArticleParameterAsync(pageHtml, GalleryType.Minor);
             }
             catch (Exception e)
             {
                 return new DeleteResult(false, e.Message);
             }
+
+            delete_Params = parseResult.Item1;
 
             string _reqURL = "http://gall.dcinside.com/mgallery/forms/delete_submit";
             string referer = "http://gall.dcinside.com/mgallery/board/delete/?id=" + delParam.GalleryId + "&no=" + delParam.ArticleID + "&key=" + key;
@@ -454,13 +457,14 @@ namespace DCAdapter
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Referer = referer;
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
             using (Stream stream = await req.GetRequestStreamAsync())
             using (StreamWriter writer = new StreamWriter(req.GetRequestStream()))
             {
                 string reqData = delete_Params.ToString();
+
                 await writer.WriteAsync(reqData);
             }
 
@@ -496,14 +500,14 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> RequestDeleteGalleryComment(GalleryCommentDeleteParameters param)
+        private async Task<DeleteResult> PostDeleteGalleryCommentAsync(GalleryCommentDeleteParameters param)
         {
-            string commentPageHtml = await RequestGalleryCommentViewSource(param.GalleryId, param.ArticleId);
+            string commentPageHtml = await GetGalleryCommentViewPageAsync(param.GalleryId, param.ArticleId);
             string ci_t = null, check7 = null;
             
             try
             {
-                HtmlParser.GetDeleteCommentParameters(commentPageHtml, out check7);
+                check7 = await HtmlParser.GetDeleteCommentParameterAsync(commentPageHtml);
                 ci_t = cookies.GetCookies(new Uri("http://gall.dcinside.com/"))["ci_c"].Value;
             }
             catch (Exception e)
@@ -522,7 +526,7 @@ namespace DCAdapter
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Referer = referer;
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.Host = host;
             req.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
@@ -564,7 +568,7 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> RequestDeleteGallogArticle(GallogArticleDeleteParameters param, int delay)
+        private async Task<DeleteResult> PostDeleteGallogArticleAsync(GallogArticleDeleteParameters param, int delay)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteArticle.php";
             const string host = "gallog.dcinside.com";
@@ -577,7 +581,7 @@ namespace DCAdapter
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Referer = referer;
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.Host = host;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
 
@@ -618,7 +622,7 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<DeleteResult> RequestDeleteGallogComment(GallogCommentDeleteParameters param, int delay)
+        private async Task<DeleteResult> PostDeleteGallogCommentAsync(GallogCommentDeleteParameters param, int delay)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteRepOk.php";
             const string host = "gallog.dcinside.com";
@@ -632,7 +636,7 @@ namespace DCAdapter
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Referer = referer;
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.Host = host;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
 
@@ -673,15 +677,15 @@ namespace DCAdapter
             return new DeleteResult(false, "알 수 없는 오류입니다.");
         }
         
-        private async Task<string> RequestGalleryCommentViewSource(string gallid, string articleid)
+        private async Task<string> GetGalleryCommentViewPageAsync(string gallid, string articleid)
         {
             const string _reqURL = "http://gall.dcinside.com/board/comment_view/";
             string referer = "http://gall.dcinside.com/board/lists/?id=" + gallid;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?id=" + gallid + "&no=" + articleid);
             
+            req.Accept = _defaultAcceptString;
             req.Method = "GET";
-            req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
@@ -707,7 +711,7 @@ namespace DCAdapter
             throw new Exception("글을 불러올 수 없습니다.");
         }
         
-        private async Task<string> RequestDeleteGalleryArticleSource(string gallId, string no, string key, GalleryType gallType)
+        private async Task<string> GetDeleteGalleryArticlePageAsync(string gallId, string no, string key, GalleryType gallType)
         {
             string _reqURL = null;
             string referer = null; 
@@ -734,8 +738,8 @@ namespace DCAdapter
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
             req.Method = "GET";
-            req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
-            req.UserAgent = _UserAgent;
+            req.Accept = _defaultAcceptString;
+            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
@@ -761,14 +765,14 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
         
-        private static string RequestDeleteGallogArticlePage(string id, string gall_no, string art_id, string logNo, ref CookieContainer cookies)
+        private string GetDeleteGallogArticlePageAsync(string id, string gall_no, string art_id, string logNo, ref CookieContainer cookies)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteLog.php";
             string referer = "http://gallog.dcinside.com/inc/_mainGallog.php?gid=" + id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?gid=" + id + "&cid=" + gall_no + "&pno=" + art_id + "&logNo=" + logNo + "&mode=gMdf");
 
             req.Method = "GET";
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
@@ -794,13 +798,13 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
         
-        private async Task<string> RequestDeleteGallogArticleSource(string url, string id)
+        private async Task<string> GetDeleteGallogArticlePageAsync(string url, string id)
         {
             string referer = "http://gallog.dcinside.com/inc/_mainGallog.php?gid=" + id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
 
             req.Method = "GET";
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
@@ -826,14 +830,14 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
         
-        private static string RequestDeleteGallogCommentPage(string id, string art_id, string commentId, string logNo, ref CookieContainer cookies)
+        private string GetDeleteGallogCommentPageAsync(string id, string art_id, string commentId, string logNo, ref CookieContainer cookies)
         {
             const string _reqURL = "http://gallog.dcinside.com/inc/_deleteLogRep.php";
             string referer = "http://gallog.dcinside.com/inc/_mainGallog.php?gid=" + id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?gid=" + id + "&cid=&id=&no=" + art_id + "&c_no=" + commentId + "&logNo=" + logNo);
 
             req.Method = "GET";
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
@@ -859,13 +863,13 @@ namespace DCAdapter
             throw new Exception("갤로그 페이지를 불러올 수 없습니다.");
         }
         
-        private async Task<string> RequestDeleteGallogCommentSource(string url, string user_id)
+        private async Task<string> GetDeleteGallogCommentPageAsync(string url, string user_id)
         {
             string referer = "http://gallog.dcinside.com/inc/_mainGallog.php?gid=" + user_id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
 
             req.Method = "GET";
-            req.UserAgent = _UserAgent;
+            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
             req.Headers.Add("Upgrade-Insecure-Requests", "1");
