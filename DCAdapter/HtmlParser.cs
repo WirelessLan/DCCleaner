@@ -71,7 +71,7 @@ namespace DCAdapter
         /// <param name="lately_gallery">최근 방문한 갤러리</param>
         internal static async Task<Tuple<ParameterStorage, string>> GetDeleteArticleParameterAsync(string html, GalleryType gallType)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 string lately_gallery = null;
                 ParameterStorage delete_Params = new ParameterStorage();
@@ -111,7 +111,8 @@ namespace DCAdapter
                 foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
                     delete_Params.Push(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
 
-                string jsParamName, jsParamValue, jsEncCode;
+                string jsEncCode;
+                ParameterStorage jsParam;
                 string jsScript = "";
 
                 foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
@@ -121,9 +122,11 @@ namespace DCAdapter
                     throw new Exception("알 수 없는 오류입니다.");
 
                 // 글 삭제시 실행되는 스크립트의 추가 값을 가져옴
-                JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
+                var parseResult = await JSParser.GetDeleteGalleryArticleParameterAsync(jsScript, gallType);
+                jsEncCode = parseResult.Item1;
+                jsParam = parseResult.Item2;
 
-                delete_Params.Push(jsParamName, jsParamValue);
+                delete_Params.Push(jsParam);
                 if (gallType == GalleryType.Normal)
                     delete_Params["service_code"] = Cryption.DecryptCode(jsEncCode, delete_Params["service_code"]);
 
@@ -133,7 +136,7 @@ namespace DCAdapter
 
         internal static async Task<Tuple<ParameterStorage, string>> GetDeleteFlowArticleParameterAsync(string html, GalleryType gallType)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 ParameterStorage delete_Params = new ParameterStorage();
                 string lately_gallery = null;
@@ -165,7 +168,8 @@ namespace DCAdapter
                 foreach (HtmlNode input in deleteNode.ParentNode.Descendants("input").Where(n => n.GetAttributeValue("type", "") == "hidden"))
                     delete_Params.Push(input.GetAttributeValue("name", ""), input.GetAttributeValue("value", ""));
 
-                string jsParamName, jsParamValue, jsEncCode;
+                string jsEncCode;
+                ParameterStorage jsParam;
                 string jsScript = "";
 
                 foreach (HtmlNode scriptNode in doc.DocumentNode.Descendants("script"))
@@ -174,9 +178,11 @@ namespace DCAdapter
                 if (jsScript == "")
                     throw new Exception("알 수 없는 오류입니다.");
 
-                JSParser.ParseDeleteGalleryArticleParameter(jsScript, gallType, out jsEncCode, out jsParamName, out jsParamValue);
+                var parseResult = await JSParser.GetDeleteGalleryArticleParameterAsync(jsScript, gallType);
+                jsEncCode = parseResult.Item1;
+                jsParam = parseResult.Item2;
 
-                delete_Params.Push(jsParamName, jsParamValue);
+                delete_Params.Push(jsParam);
                 if (gallType == GalleryType.Normal)
                     delete_Params["service_code"] = Cryption.DecryptCode(jsEncCode, delete_Params["service_code"]);
 
@@ -336,127 +342,131 @@ namespace DCAdapter
             });
         }
         
-        internal static List<ArticleInformation> GetSearchedArticleList(string searchedHtml, string gall_id, string searchNick, GalleryType gallType, bool isFixed, ref int searchPos, out int maxPage)
+        internal static async Task<Tuple<List<ArticleInformation>, int, int>> 
+            GetSearchedArticleList(string searchedHtml, string gall_id, string searchNick, GalleryType gallType, bool isFixed, int searchPos)
         {
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(searchedHtml);
-
-            maxPage = 0;
-
-            List<ArticleInformation> searchedList = new List<ArticleInformation>();
-
-            string baseUrl = "http://gall.dcinside.com/";
-
-            HtmlNode pageList = doc.GetElementbyId("dgn_btn_paging");
-            if (pageList == null)
-                throw new Exception("알 수 없는 오류입니다.");
-
-            HtmlNode lastChild = pageList.Descendants("a").Last();
-
-            if (lastChild.InnerText != "다음검색")
-                searchPos = -1;
-            else
+            return await Task.Run(() =>
             {
-                string src = lastChild.GetAttributeValue("href", "");
-                if(string.IsNullOrWhiteSpace(src))
-                {
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(searchedHtml);
+
+                int maxPage = 0;
+
+                List<ArticleInformation> searchedList = new List<ArticleInformation>();
+
+                string baseUrl = "http://gall.dcinside.com/";
+
+                HtmlNode pageList = doc.GetElementbyId("dgn_btn_paging");
+                if (pageList == null)
                     throw new Exception("알 수 없는 오류입니다.");
+
+                HtmlNode lastChild = pageList.Descendants("a").Last();
+
+                if (lastChild.InnerText != "다음검색")
+                    searchPos = -1;
+                else
+                {
+                    string src = lastChild.GetAttributeValue("href", "");
+                    if (string.IsNullOrWhiteSpace(src))
+                    {
+                        throw new Exception("알 수 없는 오류입니다.");
+                    }
+
+                    src = baseUrl + src.Substring(1);
+
+                    Uri nextSearchUri = new Uri(src);
+                    int.TryParse(HttpUtility.ParseQueryString(nextSearchUri.Query).Get("search_pos"), out searchPos);
                 }
 
-                src = baseUrl + src.Substring(1);
-
-                Uri nextSearchUri = new Uri(src);
-                int.TryParse(HttpUtility.ParseQueryString(nextSearchUri.Query).Get("search_pos"), out searchPos);
-            }
-
-            HtmlNode lastPage = pageList.Descendants("span").Where(n => n.GetAttributeValue("class", "") == "arrow_2").FirstOrDefault();
-            if(lastPage == null)
-            {
-                if (lastChild.InnerText != "다음검색")
+                HtmlNode lastPage = pageList.Descendants("span").Where(n => n.GetAttributeValue("class", "") == "arrow_2").FirstOrDefault();
+                if (lastPage == null)
                 {
-                    int.TryParse(lastChild.InnerText, out maxPage);
+                    if (lastChild.InnerText != "다음검색")
+                    {
+                        int.TryParse(lastChild.InnerText, out maxPage);
+                    }
+                    else
+                    {
+                        lastPage = lastChild.PreviousSibling;
+                        int.TryParse(lastPage.InnerText, out maxPage);
+                    }
                 }
                 else
                 {
-                    lastPage = lastChild.PreviousSibling;
-                    int.TryParse(lastPage.InnerText, out maxPage);
-                }
-            }
-            else
-            {
-                string src = lastPage.ParentNode.GetAttributeValue("href", "");
-                if (string.IsNullOrWhiteSpace(src))
-                {
-                    throw new Exception("알 수 없는 오류입니다.");
-                }
-                
-                src = baseUrl + src.Substring(1);
+                    string src = lastPage.ParentNode.GetAttributeValue("href", "");
+                    if (string.IsNullOrWhiteSpace(src))
+                    {
+                        throw new Exception("알 수 없는 오류입니다.");
+                    }
 
-                Uri maxPageUri = new Uri(src);
-                int.TryParse(HttpUtility.ParseQueryString(maxPageUri.Query).Get("page"), out maxPage);
-            }
+                    src = baseUrl + src.Substring(1);
 
-            string deleteBasePath = null;
-
-            if (gallType == GalleryType.Normal)
-                deleteBasePath = "http://gall.dcinside.com/mgallery/board/delete/?id=" + gall_id;
-            else if (gallType == GalleryType.Minor)
-                deleteBasePath = "http://gall.dcinside.com/board/delete/?id=" + gall_id;
-
-            if (deleteBasePath == null)
-                throw new Exception("예상치 못한 갤러리 형식입니다.");
-
-            foreach (HtmlNode article in doc.DocumentNode.Descendants("tr").Where(n => n.GetAttributeValue("class", "") == "tb"))
-            {
-                HtmlNode noticeNode = article.Descendants("td").Where(n => n.GetAttributeValue("class", "") == "t_notice").First();
-                if (noticeNode.InnerText == "공지")
-                    continue;
-
-                HtmlNode userNode = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_writer")).First();
-                string user_id = userNode.GetAttributeValue("user_id", "");
-                if (user_id == "" && isFixed)
-                    continue;
-                else if (user_id != "" && !isFixed)
-                    continue;
-
-                string nick = userNode.Descendants("span").First().InnerText;
-                if (nick != searchNick)
-                    continue;
-
-                HtmlNode subjectNode = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_subject")).First();
-
-                string title = subjectNode.InnerText;
-
-                string articleUrl = subjectNode.Descendants("a").First().GetAttributeValue("href", "");
-                if (string.IsNullOrWhiteSpace(articleUrl))
-                {
-                    throw new Exception("알 수 없는 오류입니다.");
+                    Uri maxPageUri = new Uri(src);
+                    int.TryParse(HttpUtility.ParseQueryString(maxPageUri.Query).Get("page"), out maxPage);
                 }
 
-                articleUrl = baseUrl + articleUrl.Substring(1);
+                string deleteBasePath = null;
 
-                Uri subjectUri = new Uri(articleUrl);
-                string articleNo = HttpUtility.ParseQueryString(subjectUri.Query).Get("no");
+                if (gallType == GalleryType.Normal)
+                    deleteBasePath = "http://gall.dcinside.com/mgallery/board/delete/?id=" + gall_id;
+                else if (gallType == GalleryType.Minor)
+                    deleteBasePath = "http://gall.dcinside.com/board/delete/?id=" + gall_id;
 
-                ArticleInformation info = new ArticleInformation();
-                info.Date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
-                info.Title = HttpUtility.HtmlDecode(title);
-                info.GalleryDeleteParameter = new GalleryArticleDeleteParameter()
+                if (deleteBasePath == null)
+                    throw new Exception("예상치 못한 갤러리 형식입니다.");
+
+                foreach (HtmlNode article in doc.DocumentNode.Descendants("tr").Where(n => n.GetAttributeValue("class", "") == "tb"))
                 {
-                    GalleryId = gall_id,
-                    ArticleID = articleNo
-                };
-                info.DeleteUrl = deleteBasePath + "&no=" + articleNo;
+                    HtmlNode noticeNode = article.Descendants("td").Where(n => n.GetAttributeValue("class", "") == "t_notice").First();
+                    if (noticeNode.InnerText == "공지")
+                        continue;
 
-                searchedList.Add(info);
-            }
+                    HtmlNode userNode = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_writer")).First();
+                    string user_id = userNode.GetAttributeValue("user_id", "");
+                    if (user_id == "" && isFixed)
+                        continue;
+                    else if (user_id != "" && !isFixed)
+                        continue;
 
-            return searchedList;
+                    string nick = userNode.Descendants("span").First().InnerText;
+                    if (nick != searchNick)
+                        continue;
+
+                    HtmlNode subjectNode = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_subject")).First();
+
+                    string title = subjectNode.InnerText;
+
+                    string articleUrl = subjectNode.Descendants("a").First().GetAttributeValue("href", "");
+                    if (string.IsNullOrWhiteSpace(articleUrl))
+                    {
+                        throw new Exception("알 수 없는 오류입니다.");
+                    }
+
+                    articleUrl = baseUrl + articleUrl.Substring(1);
+
+                    Uri subjectUri = new Uri(articleUrl);
+                    string articleNo = HttpUtility.ParseQueryString(subjectUri.Query).Get("no");
+
+                    ArticleInformation info = new ArticleInformation();
+                    info.Date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
+                    info.Title = HttpUtility.HtmlDecode(title);
+                    info.GalleryDeleteParameter = new GalleryArticleDeleteParameter()
+                    {
+                        GalleryId = gall_id,
+                        ArticleID = articleNo
+                    };
+                    info.DeleteUrl = deleteBasePath + "&no=" + articleNo;
+
+                    searchedList.Add(info);
+                }
+
+                return new Tuple<List<ArticleInformation>, int, int>(searchedList, searchPos, maxPage);
+            });
         }
 
         internal static async Task<ParameterStorage> GetLoginParameterAsync(string src)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(src);
@@ -474,7 +484,7 @@ namespace DCAdapter
                 }
 
                 // 로그인시 필요한 파라미터 정보들을 가져옴
-                return JSParser.ParseLoginParameters(jsScript);
+                return await JSParser.GetLoginParameterAsync(jsScript);
             });
         }
     }

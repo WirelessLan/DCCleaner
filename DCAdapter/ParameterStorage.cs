@@ -40,5 +40,13 @@ namespace DCAdapter
         }
 
         public void Push(string key, string val) => Parameters.Add(key, val);
+
+        public void Push(ParameterStorage nParam)
+        {
+            foreach(var key in nParam.Parameters.Keys)
+            {
+                Push(key, nParam[key]);
+            }
+        }
     }
 }

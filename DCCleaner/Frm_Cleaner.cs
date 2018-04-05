@@ -16,6 +16,7 @@ namespace DCCleaner
         List<ArticleInformation> searchedList = null;
         bool isBusy = false;
         bool isSearching = false;
+        CancellationTokenSource loadingToken;
 
         public Frm_Cleaner(DCConnector _conn)
         {
@@ -39,40 +40,62 @@ namespace DCCleaner
 
         private async void btn_LoadArticles_Click(object sender, EventArgs e)
         {
-            if (isBusy)
+            if (!isBusy && !isSearching)
             {
-                return;
-            }
+                articleList = new List<ArticleInformation>();
+                loadingToken = new CancellationTokenSource();
 
-            articleList = null;
+                dgv_ArticleList.Rows.Clear();
+                btn_LoadArticles.Text = "취소";
+                SetStatusMessage("쓴 글 목록을 불러오는 중입니다...");
 
-            SetStatusMessage("쓴 글 목록을 불러오는 중입니다...");
+                isBusy = true;
+                isSearching = true;
 
-            isBusy = true;
+                int page = 1;
+                bool cont = true, hasExecption = false;
 
-            try
-            {
-                articleList = await conn.LoadGallogArticles();
-            }
-            catch (Exception ex)
-            {
+                List<ArticleInformation> loadeadArticles = null;
+
+                while (cont)
+                {
+                    try
+                    {
+                        var loadResult = await conn.LoadGallogArticleAsync(page, loadingToken.Token);
+                        loadeadArticles = loadResult.Item1;
+                        articleList.AddRange(loadeadArticles);
+                        cont = loadResult.Item2;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        hasExecption = true;
+                        SetStatusMessage(ex.Message);
+                        break;
+                    }
+                    finally
+                    {
+                        if (loadeadArticles != null)
+                            LoadArticleList(loadeadArticles);
+                    }
+                }
+
                 isBusy = false;
-                SetStatusMessage(ex.Message);
-                return;
+                isSearching = false;
+                btn_LoadArticles.Text = "불러오기";
+                if (!hasExecption)
+                    SetStatusMessage("쓴 글 목록을 불러왔습니다 - 총 " + articleList.Count.ToString() + "개");
+                loadingToken = null;
             }
-            
-            if (articleList == null)
+            else if (isBusy && isSearching)
             {
-                isBusy = false;
-                SetStatusMessage("내가 쓴 글 목록을 불러올 수 없습니다.");
-                return;
+                SetStatusMessage("취소하는 중입니다...");
+                if (loadingToken != null)
+                    loadingToken.Cancel();
             }
-
-            LoadArticleList();
-
-            isBusy = false;
-
-            SetStatusMessage("쓴 글 목록을 불러왔습니다 - 총 " + articleList.Count.ToString() + "개");
         }
 
         private async void btn_LoadComments_Click(object sender, EventArgs e)
@@ -484,11 +507,9 @@ namespace DCCleaner
             MessageBox.Show(msg, "리플 삭제 정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void LoadArticleList()
+        private void LoadArticleList(List<ArticleInformation> newArticleList)
         {
-            dgv_ArticleList.Rows.Clear();
-
-            foreach (ArticleInformation info in articleList)
+            foreach (ArticleInformation info in newArticleList)
             {
                 dgv_ArticleList.Rows.Add(info.Title);
             }
@@ -528,110 +549,100 @@ namespace DCCleaner
 
         private async void btn_SearchArticle_Click(object sender, EventArgs e)
         {
-            if (isBusy)
-                return;
-
-            if (string.IsNullOrWhiteSpace(tb_SearchGalleryID.Text))
+            if (!isBusy && !isSearching)
             {
-                tb_SearchGalleryID.Focus();
-                SetStatusMessage("검색할 갤러리 ID를 입력해주세요.");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(tb_SearchNickName.Text))
-            {
-                tb_SearchNickName.Focus();
-                SetStatusMessage("검색할 닉네임을 입력해주세요.");
-                return;
-            }
-
-            // 기존 검색목록 삭제
-            dgv_SearchArticle.Rows.Clear();
-            if (searchedList != null)
-                searchedList.Clear();
-            else
-                searchedList = new List<ArticleInformation>();
-
-            string gall_id, nickname;
-            gall_id = tb_SearchGalleryID.Text.Trim();
-            nickname = tb_SearchNickName.Text.Trim();
-            GalleryType gallType = GalleryType.Normal;
-            if (rb_NormalGallery.Checked)
-                gallType = GalleryType.Normal;
-            else if (rb_MinorGallery.Checked)
-                gallType = GalleryType.Minor;
-
-            SetStatusMessage("글 목록을 검색하는 중입니다...");
-            
-            int delay = 50;
-            int pos = 0;
-            int page = 1;
-            bool cont = false;
-            List<ArticleInformation> newSearchedList;
-            Tuple<List<ArticleInformation>, int, int, bool> req = null;
-
-            isBusy = true;
-            isSearching = true;
-
-            while (pos != -1)
-            {
-                try
+                if (string.IsNullOrWhiteSpace(tb_SearchGalleryID.Text))
                 {
-                    req = await conn.SearchArticles(gall_id, gallType, nickname, pos, page, cont);
-                }
-                catch (Exception ex)
-                {
-                    isBusy = false;
-                    isSearching = false;
-                    SetStatusMessage(ex.Message);
-
+                    tb_SearchGalleryID.Focus();
+                    SetStatusMessage("검색할 갤러리 ID를 입력해주세요.");
                     return;
                 }
-                newSearchedList = req.Item1;
-                pos = req.Item2;
-                page = req.Item3;
-                cont = req.Item4;
 
-                searchedList.AddRange(newSearchedList);
+                if (string.IsNullOrWhiteSpace(tb_SearchNickName.Text))
+                {
+                    tb_SearchNickName.Focus();
+                    SetStatusMessage("검색할 닉네임을 입력해주세요.");
+                    return;
+                }
 
-                LoadSearchedList(newSearchedList);
+                // 기존 검색목록 삭제
+                dgv_SearchArticle.Rows.Clear();
+                if (searchedList != null)
+                    searchedList.Clear();
+                else
+                    searchedList = new List<ArticleInformation>();
 
-                await Task.Delay(delay);
+                string gall_id, nickname;
+                gall_id = tb_SearchGalleryID.Text.Trim();
+                nickname = tb_SearchNickName.Text.Trim();
+                GalleryType gallType = GalleryType.Normal;
+                if (rb_NormalGallery.Checked)
+                    gallType = GalleryType.Normal;
+                else if (rb_MinorGallery.Checked)
+                    gallType = GalleryType.Minor;
 
-                if (!isSearching)
-                    break;
+                btn_SearchArticle.Text = "검색중지";
+                SetStatusMessage("글 목록을 검색하는 중입니다...");
+
+                int delay = 50;
+                int pos = 0;
+                int page = 1;
+                bool cont = false;
+                List<ArticleInformation> newSearchedList;
+                Tuple<List<ArticleInformation>, int, int, bool> req = null;
+
+                isBusy = true;
+                isSearching = true;
+
+                if (loadingToken == null)
+                    loadingToken = new CancellationTokenSource();
+
+                while (pos != -1)
+                {
+                    try
+                    {
+                        req = await conn.SearchArticleAsync(gall_id, gallType, nickname, pos, page, loadingToken.Token);
+                        if (!cont)
+                            break;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    finally
+                    {
+                        newSearchedList = req.Item1;
+                        pos = req.Item2;
+                        page = req.Item3;
+                        cont = req.Item4;
+
+                        searchedList.AddRange(newSearchedList);
+                        LoadSearchedList(newSearchedList);
+
+                        await Task.Delay(delay);
+                    }
+                }
+
+                isBusy = false;
+                isSearching = false;
+                btn_SearchArticle.Text = "검색하기";
+                SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
+
+                loadingToken = null;
             }
-
-            isBusy = false;
-            isSearching = false;
-            SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
-        }
-
-        private void btn_AbortSearch_Click(object sender, EventArgs e)
-        {
-            if (!isBusy)
+            else if (isBusy && isSearching)
             {
-                return;
+                SetStatusMessage("검색을 중단하는 중입니다...");
+
+                if(loadingToken != null)
+                    loadingToken.Cancel();
             }
-
-            if (isSearching == false)
-                return;
-
-            SetStatusMessage("검색을 중단하는 중입니다...");
-
-            isBusy = false;
-
-            isSearching = false;
-
-            SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
         }
 
         private void LoadSearchedList(List<ArticleInformation> searchedList)
         {
             foreach (ArticleInformation info in searchedList)
-            {
                 dgv_SearchArticle.Rows.Add(info.Title, info.Date);
-            }
 
             string loadedCnt = dgv_SearchArticle.Rows.Count.ToString();
             gb_SearchedArticleList.Text = "검색된 글 [" + loadedCnt + "]";

@@ -69,63 +69,71 @@ namespace DCAdapter
         /// 갤로그의 글 목록을 불러옵니다.
         /// </summary>
         /// <returns>갤로그의 글 목록을 반환합니다.</returns>
-        public async Task<List<ArticleInformation>> LoadGallogArticles()
+        public async Task<Tuple<List<ArticleInformation>, bool>> 
+            LoadGallogArticleAsync(int page, CancellationToken token = default(CancellationToken))
         {
-            string html = "";
-            int articleCounts;
-            int pageCnts;
-
-            List<ArticleInformation> articleList = new List<ArticleInformation>();
-
-            try
+            return await Task.Run(async () =>
             {
-                // 갤로그의 HTML 소스를 요청
-                html = await GetGallogMainPageAsync(user_id);
-            }
-            catch
-            {
-                return null;
-            }
+                string html = "";
+                int articleCounts, pageCnts;
+                bool cont = false;
 
-            // 갤로그의 HTML 소스에서 총 쓴 글의 갯수를 가져와서 총 페이지 갯수를 지정.
-            articleCounts = await HtmlParser.GetArticleCountAsync(html);
-            pageCnts = (int)(articleCounts / 10) + (articleCounts % 10 > 0 ? 1 : 0);
-
-            // 총 페이지 수만큼 반복하여 총 글 목록을 리스트에 저장함.
-            for (int i = 0; i < pageCnts; i++)
-            {
-                List<ArticleInformation> newArticleList = null;
                 try
                 {
-                    newArticleList = await LoadArticleListAsync(i + 1);
+                    // 갤로그의 HTML 소스를 요청
+                    html = await GetGallogMainPageAsync(user_id);
                 }
                 catch
                 {
-                    for (int j = 0; j < 3; j++)
+                    return null;
+                }
+
+                // 갤로그의 HTML 소스에서 총 쓴 글의 갯수를 가져와서 총 페이지 갯수를 지정.
+                articleCounts = await HtmlParser.GetArticleCountAsync(html);
+                pageCnts = (int)(articleCounts / 10) + (articleCounts % 10 > 0 ? 1 : 0);
+
+                if(pageCnts == 0)
+                    return new Tuple<List<ArticleInformation>, bool>(new List<ArticleInformation>(), cont);
+
+                if (page < 0 || page > pageCnts)
+                {
+                    throw new ArgumentOutOfRangeException();
+                }
+
+                if (page < pageCnts)
+                    cont = true;
+
+                List<ArticleInformation> articleList = null;
+
+                try
+                {
+                    articleList = await LoadArticleListAsync(page);
+                }
+                catch
+                {
+                    for (int j = 0; j < 5; j++)
                     {
                         try
                         {
                             await Task.Delay(200);
-                            newArticleList = await LoadArticleListAsync(i + 1);
+                            articleList = await LoadArticleListAsync(page);
                         }
                         catch
                         {
                             continue;
                         }
 
-                        if (newArticleList != null)
+                        if (articleList != null)
                             break;
                     }
 
-                    if (newArticleList == null)
+                    if (articleList == null)
                         throw new Exception("글을 불러오는데 실패하였습니다.");
                 }
 
-                articleList.AddRange(newArticleList);
-            }
-            
-            // 저장한 리스트를 반환
-            return articleList;
+                // 저장한 리스트를 반환
+                return new Tuple<List<ArticleInformation>, bool>(articleList, cont);
+            }, token);
         }
 
         /// <summary>
@@ -222,81 +230,88 @@ namespace DCAdapter
         /// <param name="nickname">사용자 ID</param>
         /// <param name="searchPos">검색 위치</param>
         /// <param name="searchPage">검색 페이지</param>
-        /// <param name="cont">검색이 계속되는지 여부</param>
         /// <returns>검색된 글 목록</returns>
-        public async Task<Tuple<List<ArticleInformation>, int, int, bool>> SearchArticles(string gall_id, GalleryType gallType, string nickname, int searchPos, int searchPage, bool cont)
+        public async Task<Tuple<List<ArticleInformation>, int, int, bool>> 
+            SearchArticleAsync(string gall_id, GalleryType gallType, string nickname, int searchPos, int searchPage, CancellationToken token = default(CancellationToken))
         {
-            List<ArticleInformation> searchedArticleList = new List<ArticleInformation>();
-            int maxPage = 1;
-
-            cont = false;
-
-            if (searchPos != -1)
+            return await Task.Run(async () =>
             {
-                Tuple<string, int, int> req = null;
-                string searchHtml = "";
+                List<ArticleInformation> searchedArticleList = new List<ArticleInformation>();
+                int maxPage = 1;
 
-                try
+                // 검색이 계속되는지 여부
+                bool cont = false;
+
+                if (searchPos != -1)
                 {
-                    req = await GetGalleryNicknameSearchPageAsync(gall_id, gallType, nickname, searchPos, searchPage);
-                }
-                catch (Exception ex)
-                {
-                    if (ex.Message == "해당 갤러리는 존재하지 않습니다.")
+                    Tuple<string, int, int> req = null;
+                    string searchHtml = "";
+
+                    try
                     {
-                        throw new Exception(ex.Message);
+                        req = await GetGalleryNicknameSearchPageAsync(gall_id, gallType, nickname, searchPos, searchPage);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex.Message == "해당 갤러리는 존재하지 않습니다.")
+                        {
+                            throw new Exception(ex.Message);
+                        }
+
+                        searchHtml = null;
+
+                        for (int j = 0; j < 5; j++)
+                        {
+                            try
+                            {
+                                await Task.Delay(500);
+                                req = await GetGalleryNicknameSearchPageAsync(gall_id, gallType, nickname, searchPos, searchPage);
+
+                                if (req != null && !string.IsNullOrWhiteSpace(req.Item1))
+                                    break;
+                            }
+                            catch
+                            {
+                                continue;
+                            }
+                        }
+
+                        if (req == null || string.IsNullOrWhiteSpace(req.Item1))
+                            throw new Exception("글을 검색하는데 실패하였습니다.");
                     }
 
-                    searchHtml = null;
+                    searchHtml = req.Item1;
+                    searchPos = req.Item2;
+                    searchPage = req.Item3;
 
-                    for (int j = 0; j < 5; j++)
+                    int tmpPos = searchPos;
+
+                    var parseResult = await HtmlParser.GetSearchedArticleList(searchHtml, gall_id, nickname, gallType, LoginInfo.IsLoggedIn, searchPos);
+                    List<ArticleInformation> newSearchedList = parseResult.Item1;
+                    searchPos = parseResult.Item2;
+                    maxPage = parseResult.Item3;
+
+                    searchedArticleList.AddRange(newSearchedList);
+
+                    if (searchPage < maxPage)
                     {
-                        try
-                        {
-                            await Task.Delay(500);
-                            req = await GetGalleryNicknameSearchPageAsync(gall_id, gallType, nickname, searchPos, searchPage);
-
-                            if (req != null && !string.IsNullOrWhiteSpace(req.Item1))
-                                break;
-                        }
-                        catch
-                        {
-                            continue;
-                        }
+                        searchPage++;
+                        searchPos = tmpPos;
+                    }
+                    else
+                    {
+                        searchPage = 1;
                     }
 
-                    if (req == null || string.IsNullOrWhiteSpace(req.Item1))
-                        throw new Exception("글을 검색하는데 실패하였습니다.");
-                }
-
-                searchHtml = req.Item1;
-                searchPos = req.Item2;
-                searchPage = req.Item3;
-
-                int tmpPos = searchPos;
-
-                List<ArticleInformation> newSearchedList = HtmlParser.GetSearchedArticleList(searchHtml, gall_id, nickname, gallType, LoginInfo.IsLoggedIn, ref searchPos, out maxPage);
-
-                searchedArticleList.AddRange(newSearchedList);
-
-                if (searchPage < maxPage)
-                {
-                    searchPage++;
-                    searchPos = tmpPos;
+                    cont = true;
                 }
                 else
                 {
-                    searchPage = 1;
+                    cont = false;
                 }
 
-                cont = true;
-            }
-            else
-            {
-                cont = false;
-            }
-
-            return new Tuple<List<ArticleInformation>, int, int, bool>(searchedArticleList, searchPos, searchPage, cont);
+                return new Tuple<List<ArticleInformation>, int, int, bool>(searchedArticleList, searchPos, searchPage, cont);
+            }, token);
         }
         
         public async Task<ArticleInformation> DeleteArticle(ArticleInformation info, bool both)

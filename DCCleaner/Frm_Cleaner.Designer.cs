@@ -50,7 +50,6 @@
             this.tp_SearchBase = new System.Windows.Forms.TabPage();
             this.pl_SearchBasePanel = new System.Windows.Forms.Panel();
             this.gb_SearchedArticleList = new System.Windows.Forms.GroupBox();
-            this.btn_AbortSearch = new System.Windows.Forms.Button();
             this.btn_SearchArticle = new System.Windows.Forms.Button();
             this.dgv_SearchArticle = new System.Windows.Forms.DataGridView();
             this.dgvCol_Title = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -346,7 +345,6 @@
             this.gb_SearchedArticleList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.gb_SearchedArticleList.Controls.Add(this.btn_AbortSearch);
             this.gb_SearchedArticleList.Controls.Add(this.btn_SearchArticle);
             this.gb_SearchedArticleList.Controls.Add(this.dgv_SearchArticle);
             this.gb_SearchedArticleList.Controls.Add(this.btn_DeleteSearchedArticle);
@@ -356,17 +354,6 @@
             this.gb_SearchedArticleList.TabIndex = 3;
             this.gb_SearchedArticleList.TabStop = false;
             this.gb_SearchedArticleList.Text = "검색된 글";
-            // 
-            // btn_AbortSearch
-            // 
-            this.btn_AbortSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btn_AbortSearch.Location = new System.Drawing.Point(87, 266);
-            this.btn_AbortSearch.Name = "btn_AbortSearch";
-            this.btn_AbortSearch.Size = new System.Drawing.Size(75, 23);
-            this.btn_AbortSearch.TabIndex = 2;
-            this.btn_AbortSearch.Text = "검색 중지";
-            this.btn_AbortSearch.UseVisualStyleBackColor = true;
-            this.btn_AbortSearch.Click += new System.EventHandler(this.btn_AbortSearch_Click);
             // 
             // btn_SearchArticle
             // 
@@ -621,7 +608,6 @@
         private System.Windows.Forms.Button btn_DeleteSearchedArticle;
         private System.Windows.Forms.GroupBox gb_SearchedArticleList;
         private System.Windows.Forms.Button btn_SearchArticle;
-        private System.Windows.Forms.Button btn_AbortSearch;
         private System.Windows.Forms.DataGridViewTextBoxColumn dgvCol_Title;
         private System.Windows.Forms.DataGridViewTextBoxColumn dgvCol_Date;
     }
