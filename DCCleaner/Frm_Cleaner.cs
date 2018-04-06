@@ -624,18 +624,21 @@ namespace DCCleaner
                     }
                     finally
                     {
-                        newSearchedList = req.Item1;
-                        pos = req.Item2;
-                        page = req.Item3;
-                        cont = req.Item4;
+                        if (req != null)
+                        {
+                            newSearchedList = req.Item1;
+                            pos = req.Item2;
+                            page = req.Item3;
+                            cont = req.Item4;
 
-                        searchedList.AddRange(newSearchedList);
-                        LoadSearchedList(newSearchedList);
+                            searchedList.AddRange(newSearchedList);
+                            LoadSearchedList(newSearchedList);
+                        }
 
                         await Task.Delay(delay);
                     }
 
-                    if (!cont)
+                    if (!cont || req == null)
                         break;
                 }
 
