@@ -611,8 +611,6 @@ namespace DCCleaner
                     try
                     {
                         req = await conn.SearchArticleAsync(gall_id, gallType, nickname, pos, page, loadingToken.Token);
-                        if (!cont)
-                            break;
                     }
                     catch (OperationCanceledException)
                     {
@@ -630,6 +628,9 @@ namespace DCCleaner
 
                         await Task.Delay(delay);
                     }
+
+                    if (!cont)
+                        break;
                 }
 
                 isBusy = false;
