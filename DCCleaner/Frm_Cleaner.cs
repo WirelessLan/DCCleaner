@@ -596,7 +596,7 @@ namespace DCCleaner
                 int delay = 50;
                 int pos = 0;
                 int page = 1;
-                bool cont = false;
+                bool cont = false, hasExecption = false;
                 List<ArticleInformation> newSearchedList;
                 Tuple<List<ArticleInformation>, int, int, bool> req = null;
 
@@ -614,6 +614,12 @@ namespace DCCleaner
                     }
                     catch (OperationCanceledException)
                     {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        hasExecption = true;
+                        SetStatusMessage(ex.Message);
                         break;
                     }
                     finally
@@ -636,7 +642,8 @@ namespace DCCleaner
                 isBusy = false;
                 isSearching = false;
                 btn_SearchArticle.Text = "검색하기";
-                SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
+                if (!hasExecption)
+                    SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
 
                 loadingToken = null;
             }
