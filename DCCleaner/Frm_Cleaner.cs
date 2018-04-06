@@ -52,19 +52,17 @@ namespace DCCleaner
                 isBusy = true;
                 isSearching = true;
 
-                int page = 1;
                 bool cont = true, hasExecption = false;
 
-                List<ArticleInformation> loadeadArticles = null;
-
-                while (cont)
-                {
+                for (int page = 1; cont; page++)
+                { 
                     try
                     {
-                        var loadResult = await conn.LoadGallogArticleAsync(page, loadingToken.Token);
-                        loadeadArticles = loadResult.Item1;
-                        articleList.AddRange(loadeadArticles);
+                        var loadResult = await conn.LoadGallogItemAsync<ArticleInformation>(page, loadingToken.Token);
+                        articleList.AddRange(loadResult.Item1);
                         cont = loadResult.Item2;
+                        if (loadResult.Item1 != null)
+                            LoadArticleList(loadResult.Item1);
                     }
                     catch (OperationCanceledException)
                     {
@@ -76,22 +74,19 @@ namespace DCCleaner
                         SetStatusMessage(ex.Message);
                         break;
                     }
-                    finally
-                    {
-                        if (loadeadArticles != null)
-                            LoadArticleList(loadeadArticles);
-                    }
                 }
 
                 isBusy = false;
                 isSearching = false;
                 btn_LoadArticles.Text = "불러오기";
+                btn_LoadArticles.Enabled = true;
                 if (!hasExecption)
                     SetStatusMessage("쓴 글 목록을 불러왔습니다 - 총 " + articleList.Count.ToString() + "개");
                 loadingToken = null;
             }
             else if (isBusy && isSearching)
             {
+                btn_LoadArticles.Enabled = false;
                 SetStatusMessage("취소하는 중입니다...");
                 if (loadingToken != null)
                     loadingToken.Cancel();
@@ -100,41 +95,57 @@ namespace DCCleaner
 
         private async void btn_LoadComments_Click(object sender, EventArgs e)
         {
-            if (isBusy)
+            if (!isBusy && !isSearching)
             {
-                return;
-            }
+                commentList = new List<CommentInformation>();
+                loadingToken = new CancellationTokenSource();
 
-            commentList = null;
+                dgv_CommentList.Rows.Clear();
+                btn_LoadComments.Text = "취소";
+                SetStatusMessage("쓴 리플 목록을 불러오는 중입니다...");
 
-            SetStatusMessage("쓴 리플 목록을 불러오는 중입니다...");
+                isBusy = true;
+                isSearching = true;
 
-            isBusy = true;
+                bool cont = true, hasExecption = false;
 
-            try
-            {
-                commentList = await conn.LoadGallogComments();
-            }
-            catch (Exception ex)
-            {
+                for (int page = 1; cont; page++)
+                {
+                    try
+                    {
+                        var loadResult = await conn.LoadGallogItemAsync<CommentInformation>(page, loadingToken.Token);
+                        commentList.AddRange(loadResult.Item1);
+                        cont = loadResult.Item2;
+                        if (loadResult.Item1 != null)
+                            LoadCommentList(loadResult.Item1);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        hasExecption = true;
+                        SetStatusMessage(ex.Message);
+                        break;
+                    }
+                }
+
                 isBusy = false;
-                SetStatusMessage(ex.Message);
-                return;
+                isSearching = false;
+                btn_LoadComments.Text = "불러오기";
+                btn_LoadComments.Enabled = true;
+                if (!hasExecption)
+                    SetStatusMessage("쓴 리플 목록을 불러왔습니다 - 총 " + commentList.Count.ToString() + "개");
+                loadingToken = null;
             }
-
-            if (commentList == null)
+            else if (isBusy && isSearching)
             {
-                isBusy = false;
-                SetStatusMessage("내가 쓴 리플 목록을 불러올 수 없습니다.");
-                return;
+                btn_LoadComments.Enabled = false;
+                SetStatusMessage("취소하는 중입니다...");
+                if (loadingToken != null)
+                    loadingToken.Cancel();
             }
-
-            LoadCommentList();
-
-            isBusy = false;
-
-            SetStatusMessage("쓴 리플 목록을 불러왔습니다 - 총 " + commentList.Count.ToString() + "개");
-
         }
 
         private void btn_RemoveGallArticle_Click(object sender, EventArgs e)
@@ -518,11 +529,9 @@ namespace DCCleaner
             gb_ArticleGroup.Text = "내가 쓴 글 [" + loadedCnt + "]";
         }
 
-        private void LoadCommentList()
+        private void LoadCommentList(List<CommentInformation> newArticleList)
         {
-            dgv_CommentList.Rows.Clear();
-
-            foreach (CommentInformation info in commentList)
+            foreach (CommentInformation info in newArticleList)
             {
                 dgv_CommentList.Rows.Add(info.Name, info.Content, info.Date);
             }

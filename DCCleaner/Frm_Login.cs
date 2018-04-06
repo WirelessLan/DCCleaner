@@ -32,7 +32,7 @@ namespace DCCleaner
                 return;
             }
 
-            string id = tb_ID.Text.Trim();
+            string id = tb_ID.Text.Trim().ToLower();
             string pw = tb_PW.Text.Trim();
 
             tb_ID.Enabled = false;

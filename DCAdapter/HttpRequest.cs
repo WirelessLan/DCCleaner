@@ -117,7 +117,7 @@ namespace DCAdapter
 
         private async Task<string> GetGallogMainPageAsync(string id)
         {
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_gallogURL + "/" + id);
+            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_gallogURL + "/" + id.ToLower());
 
             req.UserAgent = _userAgent;
             req.Method = "GET";

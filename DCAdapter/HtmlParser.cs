@@ -16,32 +16,26 @@ namespace DCAdapter
         /// </summary>
         /// <param name="html">갤로그의 HTML 소스</param>
         /// <returns>글 갯수</returns>
-        internal static async Task<int> GetArticleCountAsync(string html)
+        internal static async Task<int> GetItemCountAsync<T>(string html)
         {
+            if (typeof(T) != typeof(ArticleInformation) && typeof(T) != typeof(CommentInformation))
+                throw new NotSupportedException();
+
             return await Task.Run(() =>
             {
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                HtmlNode cntNode = doc.DocumentNode.SelectSingleNode("//div[@id='statusDiv']/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/font[1]");
+                int criticalIndexer = 0;
 
-                return ExtractNumberAsync(cntNode.InnerText);
-            });
-        }
+                if (typeof(T) == typeof(ArticleInformation))
+                    criticalIndexer = 1;
+                else if (typeof(T) == typeof(CommentInformation))
+                    criticalIndexer = 3;
 
-        /// <summary>
-        /// 갤로그의 댓글 갯수를 가져오는 함수
-        /// </summary>
-        /// <param name="html">갤로그의 HTML 소스</param>
-        /// <returns>댓글 갯수</returns>
-        internal static async Task<int> GetCommentCountAsync(string html)
-        {
-            return await Task.Run(() =>
-            {
-                HtmlDocument doc = new HtmlDocument();
-                doc.LoadHtml(html);
+                string xPath = "//div[@id='statusDiv']/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr["+ criticalIndexer + "]/td[1]/font[1]";
 
-                HtmlNode cntNode = doc.DocumentNode.SelectSingleNode("//div[@id='statusDiv']/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[1]/td[1]/table[1]/tr[3]/td[1]/font[1]");
+                HtmlNode cntNode = doc.DocumentNode.SelectSingleNode(xPath);
 
                 return ExtractNumberAsync(cntNode.InnerText);
             });
@@ -217,57 +211,50 @@ namespace DCAdapter
             });
         }
 
-        internal static async Task<List<CommentInformation>> GetCommentListAsync(string html)
+        internal static async Task<List<T>> GetItemListAsync<T>(string html)
         {
+            if (typeof(T) != typeof(ArticleInformation) && typeof(T) != typeof(CommentInformation))
+                throw new NotSupportedException();
+
             return await Task.Run(async () =>
             {
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                List<CommentInformation> coms = new List<CommentInformation>();
+                List<T> itemList = new List<T>();
 
-                foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//table[@bgcolor='#F2F2F5']/tr"))
-                {
-                    if (node.Descendants("td").Count() == 6)
+                if (typeof(T) == typeof(ArticleInformation))
+                    foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//img[@src='http://wstatic.dcinside.com/gallery/skin/gallog/icon_01.gif']"))
                     {
-                        string name = node.SelectSingleNode("./td[1]").InnerText;
-                        name = HttpUtility.HtmlDecode(name).Trim();
-                        string content = HttpUtility.HtmlDecode(node.SelectSingleNode("./td[3]").InnerText);
-                        string date = node.SelectSingleNode("./td[5]").InnerText;
+                        if (node.Attributes["onClick"] != null)
+                        {
+                            string title = node.ParentNode.PreviousSibling.PreviousSibling.PreviousSibling.PreviousSibling.InnerText;
+                            title = HttpUtility.HtmlDecode(title).Trim();
+                            string url = await GetAbsoulteURL(node.Attributes["onClick"].Value);
+                            string date = node.ParentNode.InnerText;
 
-                        string url = await GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);
-
-                        coms.Add(new CommentInformation() { Name = name, Content = content, Date = date, DeleteUrl = url });
+                            object nItem = new ArticleInformation() { Title = title, DeleteUrl = url, Date = date };
+                            itemList.Add((T)nItem);
+                        }
                     }
-                }
-
-                return coms;
-            });
-        }
-
-        internal static async Task<List<ArticleInformation>> GetArticleListAsync(string html)
-        {
-            return await Task.Run(async () =>
-            {
-                HtmlDocument doc = new HtmlDocument();
-                doc.LoadHtml(html);
-
-                List<ArticleInformation> arts = new List<ArticleInformation>();
-
-                foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//img[@src='http://wstatic.dcinside.com/gallery/skin/gallog/icon_01.gif']"))
-                {
-                    if (node.Attributes["onClick"] != null)
+                else if (typeof(T) == typeof(CommentInformation))
+                    foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//table[@bgcolor='#F2F2F5']/tr"))
                     {
-                        string title = node.ParentNode.PreviousSibling.PreviousSibling.PreviousSibling.PreviousSibling.InnerText;
-                        title = HttpUtility.HtmlDecode(title).Trim();
-                        string url = await GetAbsoulteURL(node.Attributes["onClick"].Value);
-                        string date = node.ParentNode.InnerText;
+                        if (node.Descendants("td").Count() == 6)
+                        {
+                            string name = node.SelectSingleNode("./td[1]").InnerText;
+                            name = HttpUtility.HtmlDecode(name).Trim();
+                            string content = HttpUtility.HtmlDecode(node.SelectSingleNode("./td[3]").InnerText);
+                            string date = node.SelectSingleNode("./td[5]").InnerText;
 
-                        arts.Add(new ArticleInformation() { Title = title, DeleteUrl = url, Date = date });
+                            string url = await GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);
+
+                            object nItem = new CommentInformation() { Name = name, Content = content, Date = date, DeleteUrl = url };
+                            itemList.Add((T)nItem);
+                        }
                     }
-                }
 
-                return arts;
+                return itemList;
             });
         }
 

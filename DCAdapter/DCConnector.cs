@@ -66,160 +66,103 @@ namespace DCAdapter
         }
 
         /// <summary>
-        /// 갤로그의 글 목록을 불러옵니다.
+        /// 갤로그의 항목 목록을 불러옵니다.
         /// </summary>
-        /// <returns>갤로그의 글 목록을 반환합니다.</returns>
-        public async Task<Tuple<List<ArticleInformation>, bool>> 
-            LoadGallogArticleAsync(int page, CancellationToken token = default(CancellationToken))
+        /// <returns>갤로그의 항목 목록을 반환합니다.</returns>
+        public async Task<Tuple<List<T>, bool>> 
+            LoadGallogItemAsync<T>(int page, CancellationToken token = default(CancellationToken))
         {
+            if (typeof(T) != typeof(ArticleInformation) && typeof(T) != typeof(CommentInformation))
+                throw new NotSupportedException();
+
             return await Task.Run(async () =>
             {
                 string html = "";
-                int articleCounts, pageCnts;
+                int itemCount = 0, pageCnt;
                 bool cont = false;
 
                 try
                 {
-                    // 갤로그의 HTML 소스를 요청
+                    // 갤로그 메인페이지의 HTML 소스를 요청
                     html = await GetGallogMainPageAsync(user_id);
                 }
                 catch
                 {
-                    return null;
+                    throw;
                 }
 
-                // 갤로그의 HTML 소스에서 총 쓴 글의 갯수를 가져와서 총 페이지 갯수를 지정.
-                articleCounts = await HtmlParser.GetArticleCountAsync(html);
-                pageCnts = (int)(articleCounts / 10) + (articleCounts % 10 > 0 ? 1 : 0);
+                // 갤로그의 HTML 소스에서 총 쓴 항목의 갯수를 가져와서 총 페이지 갯수를 지정.
+                itemCount = await HtmlParser.GetItemCountAsync<T>(html);
 
-                if(pageCnts == 0)
-                    return new Tuple<List<ArticleInformation>, bool>(new List<ArticleInformation>(), cont);
+                pageCnt = itemCount / 10 + (itemCount % 10 > 0 ? 1 : 0);
 
-                if (page < 0 || page > pageCnts)
-                {
+                if(pageCnt == 0)
+                    return new Tuple<List<T>, bool>(new List<T>(), cont);
+
+                if (page < 0 || page > pageCnt)
                     throw new ArgumentOutOfRangeException();
-                }
 
-                if (page < pageCnts)
+                if (page < pageCnt)
                     cont = true;
 
-                List<ArticleInformation> articleList = null;
+                List<T> itemList = null;
+                object loadResult;
 
                 try
                 {
-                    articleList = await LoadArticleListAsync(page);
+                    loadResult = await LoadItemListAsync<T>(page);
+                    itemList = (List<T>)loadResult;
                 }
                 catch
                 {
-                    for (int j = 0; j < 5; j++)
+                    for (int i = 0; i < 5; i++)
                     {
                         try
                         {
                             await Task.Delay(200);
-                            articleList = await LoadArticleListAsync(page);
+                            loadResult = await LoadItemListAsync<T>(page);
+                            itemList = (List<T>)loadResult;
                         }
                         catch
                         {
                             continue;
                         }
 
-                        if (articleList != null)
+                        if (itemList != null)
                             break;
                     }
 
-                    if (articleList == null)
-                        throw new Exception("글을 불러오는데 실패하였습니다.");
+                    if (itemList == null)
+                        throw new Exception("항목을 불러오는데 실패하였습니다.");
                 }
 
                 // 저장한 리스트를 반환
-                return new Tuple<List<ArticleInformation>, bool>(articleList, cont);
+                return new Tuple<List<T>, bool>(itemList, cont);
             }, token);
         }
 
         /// <summary>
-        /// 갤로그의 댓글 목록을 불러옵니다.
-        /// </summary>
-        /// <returns>갤로그의 댓글 목록을 반환합니다.</returns>
-        public async Task<List<CommentInformation>> LoadGallogComments()
-        {
-            string html = "";
-            int commentCounts;
-            int pageCnts;
-
-            List<CommentInformation> commentList = new List<CommentInformation>();
-
-            try
-            {
-                // 갤로그의 HTML 소스를 요청
-                html = await GetGallogMainPageAsync(this.user_id);
-            }
-            catch
-            {
-                return null;
-            }
-
-            commentCounts = await HtmlParser.GetCommentCountAsync(html);
-            pageCnts = (int)(commentCounts / 10) + (commentCounts % 10 > 0 ? 1 : 0);
-            
-            for (int i = 0; i < pageCnts; i++)
-            {
-                List<CommentInformation> newCommentList = null;
-                try
-                {
-                    newCommentList = await LoadCommentListAsync(i + 1);
-                }
-                catch
-                {
-                    for(int j = 0; j < 3; j++)
-                    {
-                        try
-                        {
-                            await Task.Delay(200);
-                            newCommentList = await LoadCommentListAsync(i + 1);
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-
-                        if (newCommentList != null)
-                            break;
-                    }
-
-                    if(newCommentList == null)
-                        throw new Exception("리플을 불러오는데 실패하였습니다.");
-                }
-
-                commentList.AddRange(newCommentList);
-            }
-
-            return commentList;
-        }
-
-        /// <summary>
-        /// 갤로그의 쓴 글 목록을 요청하는 함수
+        /// 갤로그의 쓴 항목 목록을 요청하는 함수
         /// </summary>
         /// <param name="page">요청할 페이지 번호</param>
-        /// <returns>해당 페이지의 글 목록</returns>
-        private async Task<List<ArticleInformation>> LoadArticleListAsync(int page)
+        /// <returns>해당 페이지의 항목 목록</returns>
+        private async Task<List<T>> LoadItemListAsync<T>(int page)
         {
-            string html = await GetGallogListPageAsync(user_id, page, 1);
-            List<ArticleInformation> articleList = await HtmlParser.GetArticleListAsync(html);
+            if (typeof(T) != typeof(ArticleInformation) && typeof(T) != typeof(CommentInformation))
+                throw new NotSupportedException();
 
-            return articleList;
-        }
+            string html = null;
+            if (typeof(T) == typeof(ArticleInformation))
+            {
+                html = await GetGallogListPageAsync(user_id, page, 1);
+            }
+            else if (typeof(T) == typeof(CommentInformation))
+            {
+                html = await GetGallogListPageAsync(user_id, 1, page);
+            }
+            List<T> itemList = await HtmlParser.GetItemListAsync<T>(html);
 
-        /// <summary>
-        /// 갤로그의 댓글 목록을 요청하는 함수
-        /// </summary>
-        /// <param name="page">요청할 페이지 번호</param>
-        /// <returns>해당 페이지의 댓글 목록</returns>
-        private async Task<List<CommentInformation>> LoadCommentListAsync(int page)
-        {
-            string html = await GetGallogListPageAsync(user_id, 1, page);
-            List<CommentInformation> articleList = await HtmlParser.GetCommentListAsync(html);
-
-            return articleList;
+            return itemList;
         }
 
         /// <summary>
