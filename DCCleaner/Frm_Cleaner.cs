@@ -11,8 +11,6 @@ namespace DCCleaner
     public partial class Frm_Cleaner : Form
     {
         DCConnector conn;
-        List<ArticleInformation> articleList = null;
-        List<CommentInformation> commentList = null;
         List<ArticleInformation> searchedList = null;
         bool isBusy = false;
         bool isSearching = false;
@@ -42,7 +40,7 @@ namespace DCCleaner
         {
             if (!isBusy && !isSearching)
             {
-                articleList = new List<ArticleInformation>();
+                List<ArticleInformation> articleList = new List<ArticleInformation>();
                 loadingToken = new CancellationTokenSource();
 
                 dgv_ArticleList.Rows.Clear();
@@ -97,7 +95,7 @@ namespace DCCleaner
         {
             if (!isBusy && !isSearching)
             {
-                commentList = new List<CommentInformation>();
+                List<CommentInformation>  commentList = new List<CommentInformation>();
                 loadingToken = new CancellationTokenSource();
 
                 dgv_CommentList.Rows.Clear();
@@ -164,7 +162,7 @@ namespace DCCleaner
         /// <param name="both">True : 갤로그도, False : 갤러리만</param>
         private async void RemoveArticles(bool both)
         {
-            if (articleList == null || articleList.Count == 0)
+            if (dgv_ArticleList.Rows.Count <= 0)
                 return;
 
             if (isBusy)
@@ -178,11 +176,12 @@ namespace DCCleaner
             isBusy = true;
 
             int rmIdx = 0;  // 삭제 인덱스. 0부터 위로
-            int delCnt = articleList.Count;
+            int delCnt = dgv_ArticleList.Rows.Count;
 
             for (int i = 0; i < delCnt; i++)
             {
-                ArticleInformation info = articleList[rmIdx];
+                DeleteInformationRow row = (dgv_ArticleList.Rows[rmIdx] as DeleteInformationRow);
+                ArticleInformation info = row.ArticleInformation;
                 ArticleInformation res = null;
                 try
                 {
@@ -216,14 +215,11 @@ namespace DCCleaner
                 info.IsGallogDeleted = res.IsGallogDeleted;
                 info.DeleteMessage = res.DeleteMessage;
 
-                articleList[rmIdx] = info;
-
                 // 갤로그도 삭제일 경우에만 화면 지움
                 if (both)
                 {
-                    articleList.RemoveAt(rmIdx);
-                    dgv_ArticleList.Rows.RemoveAt(rmIdx);
-                    gb_ArticleGroup.Text = "내가 쓴 글 [" + articleList.Count.ToString() + "]";
+                    dgv_ArticleList.Rows.Remove(row);
+                    gb_ArticleGroup.Text = "내가 쓴 글 [" + dgv_ArticleList.Rows.Count + "]";
                 }
             }
 
@@ -251,7 +247,7 @@ namespace DCCleaner
         /// <param name="both">True : 갤로그도 False : 갤러리만</param>
         private async void RemoveComments(bool both)
         {
-            if (commentList == null || commentList.Count == 0)
+            if (dgv_CommentList.Rows.Count <= 0)
                 return;
 
             if (isBusy)
@@ -265,11 +261,12 @@ namespace DCCleaner
             isBusy = true;
 
             int rmIdx = 0;  // 삭제 인덱스. 0부터 위로
-            int delCnt = commentList.Count;
+            int delCnt = dgv_CommentList.Rows.Count;
 
             for (int i = 0; i < delCnt; i++)
             {
-                CommentInformation info = commentList[rmIdx];
+                DeleteInformationRow row = (dgv_CommentList.Rows[rmIdx] as DeleteInformationRow);
+                CommentInformation info = row.CommentInformation;
                 CommentInformation res = null;
                 try
                 {
@@ -303,14 +300,11 @@ namespace DCCleaner
                 info.IsGallogDeleted = res.IsGallogDeleted;
                 info.DeleteMessage = res.DeleteMessage;
 
-                commentList[rmIdx] = info;
-
                 // 갤로그도 삭제일 경우에만 화면 지움
                 if (both)
                 {
-                    commentList.RemoveAt(rmIdx);
-                    dgv_CommentList.Rows.RemoveAt(rmIdx);
-                    gb_CommentGroup.Text = "내가 쓴 리플 [" + commentList.Count.ToString() + "]";
+                    dgv_CommentList.Rows.Remove(row);
+                    gb_CommentGroup.Text = "내가 쓴 리플 [" + dgv_CommentList.Rows.Count + "]";
                 }
             }
 
@@ -349,8 +343,8 @@ namespace DCCleaner
             if (dgv_ArticleList.SelectedRows == null || dgv_ArticleList.SelectedRows.Count == 0)
                 return;
 
-            int selectedIdx = dgv_ArticleList.SelectedRows[0].Index;
-            ArticleInformation target = articleList[selectedIdx];
+            DeleteInformationRow row = (dgv_ArticleList.SelectedRows[0] as DeleteInformationRow);
+            ArticleInformation target = row.ArticleInformation;
 
             if (isBusy)
                 return;
@@ -371,10 +365,8 @@ namespace DCCleaner
             // 갤로그와 갤러리 둘다 삭제 되었을 경우
             if (target.IsGalleryDeleted && target.IsGallogDeleted)
             {
-                articleList.RemoveAt(selectedIdx);
-
-                dgv_ArticleList.Rows.RemoveAt(selectedIdx);
-                gb_ArticleGroup.Text = "내가 쓴 글 [" + articleList.Count.ToString() + "]";
+                dgv_ArticleList.Rows.Remove(row);
+                gb_ArticleGroup.Text = "내가 쓴 글 [" + dgv_ArticleList.Rows.Count.ToString() + "]";
                 SetStatusMessage("글을 삭제하였습니다.");
             }
             else
@@ -418,8 +410,8 @@ namespace DCCleaner
             if (dgv_CommentList.SelectedRows == null || dgv_CommentList.SelectedRows.Count == 0)
                 return;
 
-            int selectedIdx = dgv_CommentList.SelectedRows[0].Index;
-            CommentInformation target = commentList[selectedIdx];
+            DeleteInformationRow row = (dgv_CommentList.SelectedRows[0] as DeleteInformationRow);
+            CommentInformation target = row.CommentInformation;
 
             if (isBusy)
                 return;
@@ -440,10 +432,8 @@ namespace DCCleaner
             // 갤로그와 갤러리 둘다 삭제 되었을 경우
             if (target.IsGalleryDeleted && target.IsGallogDeleted)
             {
-                commentList.RemoveAt(selectedIdx);
-
-                dgv_CommentList.Rows.RemoveAt(selectedIdx);
-                gb_CommentGroup.Text = "내가 쓴 리플 [" + commentList.Count.ToString() + "]";
+                dgv_CommentList.Rows.Remove(row);
+                gb_CommentGroup.Text = "내가 쓴 리플 [" + dgv_CommentList.Rows.Count.ToString() + "]";
                 SetStatusMessage("리플을 삭제하였습니다.");
             }
             else
@@ -479,8 +469,8 @@ namespace DCCleaner
             if (dgv_ArticleList.SelectedRows == null || dgv_ArticleList.SelectedRows.Count == 0)
                 return;
 
-            int selectedIdx = dgv_ArticleList.SelectedRows[0].Index;
-            ArticleInformation target = articleList[selectedIdx];
+            DeleteInformationRow row = (dgv_ArticleList.SelectedRows[0] as DeleteInformationRow);
+            ArticleInformation target = row.ArticleInformation;
 
             string msg = "갤러리 삭제 : " + (target.IsGalleryDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
                        + "갤로그 삭제 : " + (target.IsGallogDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
@@ -508,8 +498,8 @@ namespace DCCleaner
             if (dgv_CommentList.SelectedRows == null || dgv_CommentList.SelectedRows.Count == 0)
                 return;
 
-            int selectedIdx = dgv_CommentList.SelectedRows[0].Index;
-            CommentInformation target = commentList[selectedIdx];
+            DeleteInformationRow row = (dgv_CommentList.SelectedRows[0] as DeleteInformationRow);
+            CommentInformation target = row.CommentInformation;
 
             string msg = "갤러리 삭제 : " + (target.IsGalleryDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
                        + "갤로그 삭제 : " + (target.IsGallogDeleted ? "삭제됨" : "삭제안됨") + Environment.NewLine
@@ -522,10 +512,11 @@ namespace DCCleaner
         {
             foreach (ArticleInformation info in newArticleList)
             {
-                dgv_ArticleList.Rows.Add(info.Title);
+                DeleteInformationRow nRow = new DeleteInformationRow(info, dgv_ArticleList);
+                dgv_ArticleList.Rows.Add(nRow);
             }
 
-            string loadedCnt = articleList.Count.ToString();
+            string loadedCnt = dgv_ArticleList.Rows.Count.ToString();
             gb_ArticleGroup.Text = "내가 쓴 글 [" + loadedCnt + "]";
         }
 
@@ -533,10 +524,11 @@ namespace DCCleaner
         {
             foreach (CommentInformation info in newArticleList)
             {
-                dgv_CommentList.Rows.Add(info.Name, info.Content, info.Date);
+                DeleteInformationRow nRow = new DeleteInformationRow(info, dgv_CommentList);
+                dgv_CommentList.Rows.Add(nRow);
             }
 
-            string loadedCnt = commentList.Count.ToString();
+            string loadedCnt = dgv_CommentList.Rows.Count.ToString();
             gb_CommentGroup.Text = "내가 쓴 리플 [" + loadedCnt + "]";
         }
 

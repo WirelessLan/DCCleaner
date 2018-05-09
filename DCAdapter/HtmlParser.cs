@@ -233,7 +233,7 @@ namespace DCAdapter
                             string url = await GetAbsoulteURL(node.Attributes["onClick"].Value);
                             string date = node.ParentNode.InnerText;
 
-                            object nItem = new ArticleInformation() { Title = title, DeleteUrl = url, Date = date };
+                            object nItem = new ArticleInformation(title, date, url);
                             itemList.Add((T)nItem);
                         }
                     }
@@ -249,7 +249,7 @@ namespace DCAdapter
 
                             string url = await GetAbsoulteURL(node.SelectSingleNode("./td[6]/span").Attributes["onClick"].Value);
 
-                            object nItem = new CommentInformation() { Name = name, Content = content, Date = date, DeleteUrl = url };
+                            object nItem = new CommentInformation(name, content, date, url);
                             itemList.Add((T)nItem);
                         }
                     }
@@ -434,15 +434,15 @@ namespace DCAdapter
                     Uri subjectUri = new Uri(articleUrl);
                     string articleNo = HttpUtility.ParseQueryString(subjectUri.Query).Get("no");
 
-                    ArticleInformation info = new ArticleInformation();
-                    info.Date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
-                    info.Title = HttpUtility.HtmlDecode(title);
+                    string date, url;
+                    date = article.Descendants("td").Where(n => n.GetAttributeValue("class", "").Contains("t_date")).First().InnerText;
+                    url = deleteBasePath + "&no=" + articleNo;
+                    ArticleInformation info = new ArticleInformation(HttpUtility.HtmlDecode(title), date, url);
                     info.GalleryDeleteParameter = new GalleryArticleDeleteParameter()
                     {
                         GalleryId = gall_id,
                         ArticleID = articleNo
                     };
-                    info.DeleteUrl = deleteBasePath + "&no=" + articleNo;
 
                     searchedList.Add(info);
                 }

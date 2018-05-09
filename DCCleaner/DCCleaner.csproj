@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DeleteInformationRow.cs" />
     <Compile Include="Frm_Cleaner.cs">
       <SubType>Form</SubType>
     </Compile>
