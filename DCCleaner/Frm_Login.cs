@@ -53,7 +53,7 @@ namespace DCCleaner
                 tb_PW.Enabled = true;
                 btn_Login.Enabled = true;
                 btn_NoAccn.Enabled = true;
-                this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
+                this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다. 잠시 후 다시 시도해주세요.";
 
                 return;
             }

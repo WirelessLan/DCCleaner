@@ -14,6 +14,8 @@ namespace DCCleaner
         List<ArticleInformation> searchedList = null;
         bool isBusy = false;
         bool isSearching = false;
+        int startCnt = 0;
+        int endCnt = 0;
         CancellationTokenSource loadingToken;
 
         public Frm_Cleaner(DCConnector _conn)
@@ -160,7 +162,7 @@ namespace DCCleaner
         /// 글 목록 삭제 함수
         /// </summary>
         /// <param name="both">True : 갤로그도, False : 갤러리만</param>
-        private async void RemoveArticles(bool both)
+        private void RemoveArticles(bool both)
         {
             if (dgv_ArticleList.Rows.Count <= 0)
                 return;
@@ -174,53 +176,12 @@ namespace DCCleaner
                 SetStatusMessage("쓴 글 - 갤러리만 삭제중...");
 
             isBusy = true;
+            startCnt = dgv_ArticleList.Rows.Count;
 
-            int rmIdx = 0;  // 삭제 인덱스. 0부터 위로
-            int delCnt = dgv_ArticleList.Rows.Count;
-
-            for (int i = 0; i < delCnt; i++)
+            for (int i = 0; i < startCnt; i++)
             {
-                DeleteInformationRow row = (dgv_ArticleList.Rows[rmIdx] as DeleteInformationRow);
-                ArticleInformation info = row.ArticleInformation;
-                ArticleInformation res = null;
-                try
-                {
-                    res = await conn.DeleteArticle(info, both);
-                }
-                catch
-                {
-                    // 삭제 못한 글은 무시
-                    rmIdx++;
-                    continue;
-                }
-
-                if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
-                    for (int j = 0; j < 1; j++)
-                    {
-                        // 실패시, Sleep 후 1회 재시도
-                        await Task.Delay(100);
-                        res = await conn.DeleteArticle(info, both);
-                        if (res.IsGalleryDeleted && (!both || res.IsGallogDeleted))
-                            break;
-                    }
-
-                // 재시도에도 삭제 실패했을 경우,
-                if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
-                {
-                    rmIdx++;
-                    continue;   // 무시
-                }
-
-                info.IsGalleryDeleted = res.IsGalleryDeleted;
-                info.IsGallogDeleted = res.IsGallogDeleted;
-                info.DeleteMessage = res.DeleteMessage;
-
-                // 갤로그도 삭제일 경우에만 화면 지움
-                if (both)
-                {
-                    dgv_ArticleList.Rows.Remove(row);
-                    gb_ArticleGroup.Text = "내가 쓴 글 [" + dgv_ArticleList.Rows.Count + "]";
-                }
+                DeleteInformationRow row = (dgv_ArticleList.Rows[i] as DeleteInformationRow);
+                DeleteArticleAsync(row, both);
             }
 
             isBusy = false;
@@ -229,6 +190,56 @@ namespace DCCleaner
                 SetStatusMessage("쓴 글 - 갤로그도 삭제 완료");
             else
                 SetStatusMessage("쓴 글 - 갤러리만 삭제 완료");
+        }
+
+        private async void DeleteArticleAsync(DeleteInformationRow row, bool both)
+        {
+            ArticleInformation info = row.ArticleInformation;
+            ArticleInformation res = null;
+            try
+            {
+                res = await conn.DeleteArticle(info, both);
+            }
+            catch
+            {
+                // 삭제 못한 글은 무시
+            }
+
+            if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
+                for (int j = 0; j < 1; j++)
+                {
+                    // 실패시, Sleep 후 1회 재시도
+                    await Task.Delay(100);
+                    res = await conn.DeleteArticle(info, both);
+                    if (res.IsGalleryDeleted && (!both || res.IsGallogDeleted))
+                        break;
+                }
+
+            info.IsGalleryDeleted = res.IsGalleryDeleted;
+            info.IsGallogDeleted = res.IsGallogDeleted;
+            info.DeleteMessage = res.DeleteMessage;
+
+            endCnt++;
+
+            if (!info.IsGalleryDeleted || (both && !info.IsGallogDeleted))
+                return;
+
+            // 갤로그도 삭제일 경우에만 화면 지움
+            if (both)
+            {
+                dgv_ArticleList.Rows.Remove(row);
+                gb_ArticleGroup.Text = "내가 쓴 글 [" + dgv_ArticleList.Rows.Count + "]";
+            }
+
+            if (startCnt <= endCnt)
+            {
+                isBusy = false;
+
+                if (both)
+                    SetStatusMessage("쓴 글 - 갤로그도 삭제 완료");
+                else
+                    SetStatusMessage("쓴 글 - 갤러리만 삭제 완료");
+            }
         }
 
         private void btn_RemoveGallComment_Click(object sender, EventArgs e)
@@ -245,7 +256,7 @@ namespace DCCleaner
         /// 댓글 목록 삭제 함수
         /// </summary>
         /// <param name="both">True : 갤로그도 False : 갤러리만</param>
-        private async void RemoveComments(bool both)
+        private void RemoveComments(bool both)
         {
             if (dgv_CommentList.Rows.Count <= 0)
                 return;
@@ -259,61 +270,63 @@ namespace DCCleaner
                 SetStatusMessage("쓴 리플 - 갤러리만 삭제중...");
 
             isBusy = true;
+            startCnt = dgv_CommentList.Rows.Count;
 
-            int rmIdx = 0;  // 삭제 인덱스. 0부터 위로
-            int delCnt = dgv_CommentList.Rows.Count;
-
-            for (int i = 0; i < delCnt; i++)
+            for (int i = 0; i < startCnt; i++)
             {
-                DeleteInformationRow row = (dgv_CommentList.Rows[rmIdx] as DeleteInformationRow);
-                CommentInformation info = row.CommentInformation;
-                CommentInformation res = null;
-                try
-                {
-                    res = await conn.DeleteComment(info, both);
-                }
-                catch
-                {
-                    // 삭제 못한 리플은 무시
-                    rmIdx++;
-                    continue;
-                }
+                DeleteInformationRow row = (dgv_CommentList.Rows[i] as DeleteInformationRow);
+                DeleteCommentAsync(row, both);
+            }
+        }
 
-                if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
-                    for (int j = 0; j < 1; j++)
-                    {
-                        // 실패시, Sleep 후 1회 재시도
-                        await Task.Delay(100);
-                        res = await conn.DeleteComment(info, both);
-                        if (res.IsGalleryDeleted && (!both || res.IsGallogDeleted))
-                            break;
-                    }
-
-                // 재시도에도 삭제 실패했을 경우,
-                if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
-                {
-                    rmIdx++;
-                    continue;   // 무시
-                }
-
-                info.IsGalleryDeleted = res.IsGalleryDeleted;
-                info.IsGallogDeleted = res.IsGallogDeleted;
-                info.DeleteMessage = res.DeleteMessage;
-
-                // 갤로그도 삭제일 경우에만 화면 지움
-                if (both)
-                {
-                    dgv_CommentList.Rows.Remove(row);
-                    gb_CommentGroup.Text = "내가 쓴 리플 [" + dgv_CommentList.Rows.Count + "]";
-                }
+        private async void DeleteCommentAsync(DeleteInformationRow row, bool both)
+        {
+            CommentInformation info = row.CommentInformation;
+            CommentInformation res = null;
+            try
+            {
+                res = await conn.DeleteComment(info, both);
+            }
+            catch
+            {
+                // 삭제 못한 리플은 무시
             }
 
-            isBusy = false;
+            if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
+                for (int j = 0; j < 1; j++)
+                {
+                    // 실패시, Sleep 후 1회 재시도
+                    await Task.Delay(100);
+                    res = await conn.DeleteComment(info, both);
+                    if (res.IsGalleryDeleted && (!both || res.IsGallogDeleted))
+                        break;
+                }
 
+            info.IsGalleryDeleted = res.IsGalleryDeleted;
+            info.IsGallogDeleted = res.IsGallogDeleted;
+            info.DeleteMessage = res.DeleteMessage;
+
+            endCnt++;
+
+            if (!info.IsGalleryDeleted || (both && !info.IsGallogDeleted))
+                return;
+
+            // 갤로그도 삭제일 경우에만 화면 지움
             if (both)
-                SetStatusMessage("쓴 리플 - 갤로그도 삭제 완료");
-            else
-                SetStatusMessage("쓴 리플 - 갤러리만 삭제 완료");
+            {
+                dgv_CommentList.Rows.Remove(row);
+                gb_CommentGroup.Text = "내가 쓴 리플 [" + dgv_CommentList.Rows.Count + "]";
+            }
+
+            if (startCnt <= endCnt)
+            {
+                isBusy = false;
+
+                if (both)
+                    SetStatusMessage("쓴 리플 - 갤로그도 삭제 완료");
+                else
+                    SetStatusMessage("쓴 리플 - 갤러리만 삭제 완료");
+            }
         }
 
         private void dgv_ArticleList_MouseClick(object sender, MouseEventArgs e)
