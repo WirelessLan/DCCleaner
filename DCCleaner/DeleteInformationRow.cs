@@ -10,8 +10,8 @@ namespace DCCleaner
 {
     class DeleteInformationRow : DataGridViewRow
     {
-        public ArticleInformation ArticleInformation { get; }
-        public CommentInformation CommentInformation { get; }
+        public ArticleInformation ArticleInformation { get; set; }
+        public CommentInformation CommentInformation { get; set; }
 
         public DeleteInformationRow(ArticleInformation articleInfo, DataGridView dgv)
         {

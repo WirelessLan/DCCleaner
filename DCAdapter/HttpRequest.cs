@@ -258,7 +258,7 @@ namespace DCAdapter
             if(gallType == GalleryType.Normal)
                 cookies.Add(new Cookie("lately_cookie", HttpUtility.UrlEncode(lately_gallery)) { Domain="dcinside.com" });
 
-            Thread.Sleep(delay);
+            await Task.Delay(delay);
 
             string _reqURL = null;
             string referer = null;
@@ -351,7 +351,7 @@ namespace DCAdapter
             if (gallType == GalleryType.Normal)
                 cookies.Add(new Cookie("lately_cookie", HttpUtility.UrlEncode(lately_gallery)) { Domain = "dcinside.com" });
 
-            Thread.Sleep(delay);
+            await Task.Delay(delay);
 
             string _reqURL = null;
             string referer = null;

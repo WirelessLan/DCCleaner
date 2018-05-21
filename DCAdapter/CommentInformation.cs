@@ -48,6 +48,8 @@ namespace DCAdapter
             this.Content = content;
             this.Date = date;
             this.DeleteUrl = url;
+            this.IsGalleryDeleted = false;
+            this.IsGallogDeleted = false;
         }
     }
 }

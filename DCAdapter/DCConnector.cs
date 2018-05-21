@@ -283,7 +283,7 @@ namespace DCAdapter
             };
             info.GallogDeleteParameter = delParams;
 
-            Thread.Sleep(delay);
+            await Task.Delay(delay);
 
             return await DeleteArticle(info, GalleryType.Normal, both);
         }
@@ -291,7 +291,7 @@ namespace DCAdapter
         public async Task<ArticleInformation> DeleteArticle(ArticleInformation info, GalleryType gallType, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 50;
+            int delay = 100;
             
             DeleteResult res1 = null;
             try
@@ -321,7 +321,7 @@ namespace DCAdapter
             
             if (both)
             {
-                Thread.Sleep(delay);
+                await Task.Delay(delay);
 
                 DeleteResult res2 = null;
 
@@ -380,7 +380,7 @@ namespace DCAdapter
             };
             info.GallogDeleteParameter = delParams;
 
-            Thread.Sleep(delay);
+            await Task.Delay(delay);
 
             return await DeleteComment(info, true, both);
         }
@@ -388,7 +388,7 @@ namespace DCAdapter
         public async Task<CommentInformation> DeleteComment(CommentInformation info, bool actualDelete, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 50;
+            int delay = 100;
 
             DeleteResult res1 = null;
 
@@ -416,7 +416,7 @@ namespace DCAdapter
 
             if (both)
             {
-                Thread.Sleep(delay);
+                await Task.Delay(delay);
 
                 DeleteResult res2 = null;
 

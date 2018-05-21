@@ -414,7 +414,7 @@
             this.btn_DeleteSearchedArticle.TabIndex = 3;
             this.btn_DeleteSearchedArticle.Text = "전체 삭제";
             this.btn_DeleteSearchedArticle.UseVisualStyleBackColor = true;
-            this.btn_DeleteSearchedArticle.Click += new System.EventHandler(this.btn_DeleteSearchedArticle_Click);
+            this.btn_DeleteSearchedArticle.Click += new System.EventHandler(this.btn_RemoveSearchedArticle_Click);
             // 
             // gb_SearchInfo
             // 

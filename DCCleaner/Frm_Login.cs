@@ -2,6 +2,7 @@
 using System.Windows.Forms;
 using System.Threading;
 using DCAdapter;
+using System.Threading.Tasks;
 
 namespace DCCleaner
 {
@@ -19,6 +20,8 @@ namespace DCCleaner
 
         private async void btn_Login_Click(object sender, EventArgs e)
         {
+            int loginAttemptCnt = 0;
+
             if (string.IsNullOrWhiteSpace(tb_ID.Text))
             {
                 tb_ID.Focus();
@@ -43,17 +46,30 @@ namespace DCCleaner
             bool result = false;
             this.lbl_Error.Text = "로그인중입니다.";
 
-            try
+            for (loginAttemptCnt = 0; loginAttemptCnt < 5; loginAttemptCnt++)
             {
-                result = await connector.Login(id, pw);
+                result = false;
+
+                try
+                {
+                    result = await connector.Login(id, pw);
+                }
+                catch
+                {
+                    await Task.Delay(1000);
+                }
+
+                if (result)
+                    break;
             }
-            catch
+
+            if (loginAttemptCnt >= 5 && !result)
             {
                 tb_ID.Enabled = true;
                 tb_PW.Enabled = true;
                 btn_Login.Enabled = true;
                 btn_NoAccn.Enabled = true;
-                this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다. 잠시 후 다시 시도해주세요.";
+                this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
 
                 return;
             }
