@@ -20,8 +20,6 @@ namespace DCCleaner
 
         private async void btn_Login_Click(object sender, EventArgs e)
         {
-            int loginAttemptCnt = 0;
-
             if (string.IsNullOrWhiteSpace(tb_ID.Text))
             {
                 tb_ID.Focus();
@@ -46,33 +44,17 @@ namespace DCCleaner
             bool result = false;
             this.lbl_Error.Text = "로그인중입니다.";
 
-            for (loginAttemptCnt = 0; loginAttemptCnt < 5; loginAttemptCnt++)
+            try
             {
-                result = false;
-
-                try
-                {
-                    result = await connector.Login(id, pw);
-                    break;
-                }
-                catch
-                {
-                    await Task.Delay(1000);
-                }
+                result = await connector.Login(id, pw);
             }
-
-            if (loginAttemptCnt >= 5 || !result)
+            catch
             {
                 tb_ID.Enabled = true;
                 tb_PW.Enabled = true;
                 btn_Login.Enabled = true;
                 btn_NoAccn.Enabled = true;
-                if (connector.LoginInfo.ErrorMessage != null)
-                    this.lbl_Error.Text = connector.LoginInfo.ErrorMessage;
-                else
-                    this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
-
-                return;
+                this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
             }
 
             if (result)

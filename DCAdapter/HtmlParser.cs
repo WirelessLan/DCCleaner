@@ -474,23 +474,5 @@ namespace DCAdapter
                 return await JSParser.GetLoginParameterAsync(jsScript);
             });
         }
-
-        internal static async Task<string> GetLoginAuthUrl(string html)
-        {
-            return await Task.Run(() =>
-            {
-                string authUrl = null;
-
-                HtmlDocument doc = new HtmlDocument();
-                doc.LoadHtml(html);
-
-                foreach(HtmlNode linkNode in doc.DocumentNode.Descendants("a"))
-                {
-                    authUrl = linkNode.GetAttributeValue("href", null);
-                }
-
-                return authUrl;
-            });
-        }
     }
 }

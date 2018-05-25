@@ -98,7 +98,6 @@ namespace DCAdapter
             request.Accept = _defaultAcceptString;
             request.Method = "GET";
             request.Referer = gallUrl;
-            request.AllowAutoRedirect = false;
             request.CookieContainer = cookies;
             request.UserAgent = _userAgent;
             request.Proxy = null;
@@ -111,41 +110,6 @@ namespace DCAdapter
                     {
                         return reader.ReadToEnd();
                     }
-                }
-                else if ((response as HttpWebResponse).StatusCode == HttpStatusCode.RedirectKeepVerb)
-                {
-                    using (Stream responseStream = response.GetResponseStream())
-                    {
-                        using (StreamReader readStream = new StreamReader(responseStream, Encoding.UTF8))
-                        {
-                            string result = readStream.ReadToEnd();
-                            string authUrl = await HtmlParser.GetLoginAuthUrl(result);
-                            await GetLoginAuthPageAsync(authUrl);
-                            return await GetLoginPageAsync(gallUrl);
-                        }
-                    }
-                }
-                else
-                    throw new Exception("알 수 없는 오류입니다.");
-            }
-        }
-
-        private async Task GetLoginAuthPageAsync(string authUrl)
-        {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(authUrl);
-
-            request.Accept = _defaultAcceptString;
-            request.Method = "GET";
-            request.AllowAutoRedirect = false;
-            request.CookieContainer = cookies;
-            request.UserAgent = _userAgent;
-            request.Proxy = null;
-
-            using (WebResponse response = await request.GetResponseAsync())
-            {
-                if ((response as HttpWebResponse).StatusCode == HttpStatusCode.TemporaryRedirect)
-                {
-                    ; ; //Do Nothing
                 }
                 else
                     throw new Exception("알 수 없는 오류입니다.");
