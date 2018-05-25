@@ -53,23 +53,24 @@ namespace DCCleaner
                 try
                 {
                     result = await connector.Login(id, pw);
+                    break;
                 }
                 catch
                 {
                     await Task.Delay(1000);
                 }
-
-                if (result)
-                    break;
             }
 
-            if (loginAttemptCnt >= 5 && !result)
+            if (loginAttemptCnt >= 5 || !result)
             {
                 tb_ID.Enabled = true;
                 tb_PW.Enabled = true;
                 btn_Login.Enabled = true;
                 btn_NoAccn.Enabled = true;
-                this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
+                if (connector.LoginInfo.ErrorMessage != null)
+                    this.lbl_Error.Text = connector.LoginInfo.ErrorMessage;
+                else
+                    this.lbl_Error.Text = "서버 오류로 로그인에 실패하였습니다.";
 
                 return;
             }

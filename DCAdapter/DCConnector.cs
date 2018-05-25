@@ -18,6 +18,8 @@ namespace DCAdapter
 
         public DCConnector()
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
             LoginInfo = new LoginInformation();
             cookies = new CookieContainer();
         }
@@ -58,7 +60,9 @@ namespace DCAdapter
                     LoginInfo.ErrorMessage = "잘못된 비밀번호입니다.";
                 else if (LoginInfo.Status == LoginStatus.ErrorBoth)
                     LoginInfo.ErrorMessage = "아이디 또는 비밀번호가 잘못되었습니다.";
-                else if(LoginInfo.Status == LoginStatus.Unknown)
+                else if (LoginInfo.Status == LoginStatus.MaximumAttemptFailed)
+                    LoginInfo.ErrorMessage = "로그인에 5회 이상 실패하였습니다.";
+                else if (LoginInfo.Status == LoginStatus.Unknown)
                     LoginInfo.ErrorMessage = "서버 통신중 알 수없는 에러가 발생하였습니다.";
 
                 return false;

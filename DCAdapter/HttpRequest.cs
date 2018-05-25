@@ -46,7 +46,6 @@ namespace DCAdapter
             request.CookieContainer = cookies;
             request.UserAgent = _userAgent;
             request.Proxy = null;
-            request.Headers.Add("Upgrade-Insecure-Requests", "1");
             request.Referer = _loginPageURL + "?s_url=" + HttpUtility.UrlEncode(gallUrl);
 
             using (Stream stream = await request.GetRequestStreamAsync())
@@ -73,13 +72,15 @@ namespace DCAdapter
                                 status = LoginStatus.PasswordError;
                             else if (result.Contains("아이디 또는 비밀번호가 잘못되었습니다."))
                                 status = LoginStatus.ErrorBoth;
+                            else if (result.Contains("로그인을 5번 실패 하셨습니다."))
+                                status = LoginStatus.MaximumAttemptFailed;
                             else if (result.Contains("잘못된 접근입니다"))
                                 status = LoginStatus.Unknown;
                             else
                                 if (result.Contains(gallogUrl))
-                                    status = LoginStatus.Success;
-                                else if (retry)
-                                    return await PostLoginAsync(id, pw, false);
+                                status = LoginStatus.Success;
+                            else if (retry)
+                                return await PostLoginAsync(id, pw, false);
                         }
                     }
                 }
@@ -97,6 +98,7 @@ namespace DCAdapter
             request.Accept = _defaultAcceptString;
             request.Method = "GET";
             request.Referer = gallUrl;
+            request.AllowAutoRedirect = false;
             request.CookieContainer = cookies;
             request.UserAgent = _userAgent;
             request.Proxy = null;
@@ -109,6 +111,41 @@ namespace DCAdapter
                     {
                         return reader.ReadToEnd();
                     }
+                }
+                else if ((response as HttpWebResponse).StatusCode == HttpStatusCode.RedirectKeepVerb)
+                {
+                    using (Stream responseStream = response.GetResponseStream())
+                    {
+                        using (StreamReader readStream = new StreamReader(responseStream, Encoding.UTF8))
+                        {
+                            string result = readStream.ReadToEnd();
+                            string authUrl = await HtmlParser.GetLoginAuthUrl(result);
+                            await GetLoginAuthPageAsync(authUrl);
+                            return await GetLoginPageAsync(gallUrl);
+                        }
+                    }
+                }
+                else
+                    throw new Exception("알 수 없는 오류입니다.");
+            }
+        }
+
+        private async Task GetLoginAuthPageAsync(string authUrl)
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(authUrl);
+
+            request.Accept = _defaultAcceptString;
+            request.Method = "GET";
+            request.AllowAutoRedirect = false;
+            request.CookieContainer = cookies;
+            request.UserAgent = _userAgent;
+            request.Proxy = null;
+
+            using (WebResponse response = await request.GetResponseAsync())
+            {
+                if ((response as HttpWebResponse).StatusCode == HttpStatusCode.TemporaryRedirect)
+                {
+                    ; ; //Do Nothing
                 }
                 else
                     throw new Exception("알 수 없는 오류입니다.");
@@ -205,7 +242,6 @@ namespace DCAdapter
             req.Referer = referer;
             req.UserAgent = _userAgent;
             req.Host = _galleryDomain;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
 
             using (var res = await req.GetResponseAsync())
             {
@@ -576,7 +612,6 @@ namespace DCAdapter
             req.Referer = referer;
             req.UserAgent = _userAgent;
             req.Host = _gallogDomain;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
 
             using (Stream stream = await req.GetRequestStreamAsync())
             using (StreamWriter writer = new StreamWriter(stream))
@@ -630,7 +665,6 @@ namespace DCAdapter
             req.Referer = referer;
             req.UserAgent = _userAgent;
             req.Host = _gallogDomain;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
 
             using (Stream stream = await req.GetRequestStreamAsync())
             using (StreamWriter writer = new StreamWriter(stream))
@@ -680,7 +714,6 @@ namespace DCAdapter
             req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
             req.Host = _galleryDomain;
             req.Referer = referer;
 
@@ -732,7 +765,6 @@ namespace DCAdapter
             req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
             req.Host = _galleryDomain;
             req.Referer = referer;
 
@@ -763,7 +795,6 @@ namespace DCAdapter
             req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
             req.Host = _gallogDomain;
             req.Referer = referer;
 
@@ -793,7 +824,6 @@ namespace DCAdapter
             req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
             req.Host = _gallogDomain;
             req.Referer = referer;
 
@@ -824,7 +854,6 @@ namespace DCAdapter
             req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
             req.Host = _gallogDomain;
             req.Referer = referer;
 
@@ -854,7 +883,6 @@ namespace DCAdapter
             req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
             req.Proxy = null;
-            req.Headers.Add("Upgrade-Insecure-Requests", "1");
             req.Host = _gallogDomain;
             req.Referer = referer;
 

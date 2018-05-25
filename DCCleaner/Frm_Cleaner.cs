@@ -880,7 +880,7 @@ namespace DCCleaner
         {
             foreach (ArticleInformation info in newArticleList)
             {
-                DeleteInformationRow nRow = new DeleteInformationRow(info, dgv_ArticleList);
+                DeleteInformationRow nRow = new DeleteInformationRow(info, dgv_ArticleList, false);
                 dgv_ArticleList.Rows.Add(nRow);
             }
 
@@ -904,7 +904,7 @@ namespace DCCleaner
         {
             foreach (ArticleInformation info in searchedList)
             {
-                DeleteInformationRow nRow = new DeleteInformationRow(info, dgv_SearchArticle);
+                DeleteInformationRow nRow = new DeleteInformationRow(info, dgv_SearchArticle, true);
                 dgv_SearchArticle.Rows.Add(nRow);
             }
 

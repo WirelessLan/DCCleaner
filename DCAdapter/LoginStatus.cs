@@ -13,6 +13,7 @@ namespace DCAdapter
         ErrorBoth,
         NotLogin,
         NoSuchID,
+        MaximumAttemptFailed,
         Unknown
     };
 }

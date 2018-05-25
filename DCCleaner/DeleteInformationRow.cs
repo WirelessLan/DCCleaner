@@ -13,10 +13,13 @@ namespace DCCleaner
         public ArticleInformation ArticleInformation { get; set; }
         public CommentInformation CommentInformation { get; set; }
 
-        public DeleteInformationRow(ArticleInformation articleInfo, DataGridView dgv)
+        public DeleteInformationRow(ArticleInformation articleInfo, DataGridView dgv, bool useDate)
         {
             ArticleInformation = articleInfo;
-            this.CreateCells(dgv, ArticleInformation.Title);
+            if (useDate)
+                this.CreateCells(dgv, ArticleInformation.Title, ArticleInformation.Date);
+            else
+                this.CreateCells(dgv, ArticleInformation.Title);
         }
 
         public DeleteInformationRow(CommentInformation commentInfo, DataGridView dgv)
