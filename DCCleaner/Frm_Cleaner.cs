@@ -12,8 +12,7 @@ namespace DCCleaner
     {
         #region Variables
         DCConnector conn;
-        bool isBusy = false;
-        bool isSearching = false;
+        CleanerTask currentTask = CleanerTask.None;
         int deleteStartCnt = 0;
         int deleteEndCnt = 0;
         CancellationTokenSource loadingToken;
@@ -49,7 +48,7 @@ namespace DCCleaner
 
         private async void btn_LoadArticles_Click(object sender, EventArgs e)
         {
-            if (!isBusy && !isSearching)
+            if (currentTask == CleanerTask.None)
             {
                 List<ArticleInformation> articleList = new List<ArticleInformation>();
                 loadingToken = new CancellationTokenSource();
@@ -58,8 +57,7 @@ namespace DCCleaner
                 btn_LoadArticles.Text = "취소";
                 SetStatusMessage("쓴 글 목록을 불러오는 중입니다...");
 
-                isBusy = true;
-                isSearching = true;
+                currentTask = CleanerTask.LoadGallogArticles;
 
                 bool cont = true, hasExecption = false;
 
@@ -85,15 +83,14 @@ namespace DCCleaner
                     }
                 }
 
-                isBusy = false;
-                isSearching = false;
+                currentTask = CleanerTask.None;
                 btn_LoadArticles.Text = "불러오기";
                 btn_LoadArticles.Enabled = true;
                 if (!hasExecption)
                     SetStatusMessage("쓴 글 목록을 불러왔습니다 - 총 " + articleList.Count.ToString() + "개");
                 loadingToken = null;
             }
-            else if (isBusy && isSearching)
+            else if (currentTask == CleanerTask.LoadGallogArticles)
             {
                 btn_LoadArticles.Enabled = false;
                 SetStatusMessage("취소하는 중입니다...");
@@ -104,7 +101,7 @@ namespace DCCleaner
 
         private async void btn_LoadComments_Click(object sender, EventArgs e)
         {
-            if (!isBusy && !isSearching)
+            if (currentTask == CleanerTask.None)
             {
                 List<CommentInformation>  commentList = new List<CommentInformation>();
                 loadingToken = new CancellationTokenSource();
@@ -113,8 +110,7 @@ namespace DCCleaner
                 btn_LoadComments.Text = "취소";
                 SetStatusMessage("쓴 리플 목록을 불러오는 중입니다...");
 
-                isBusy = true;
-                isSearching = true;
+                currentTask = CleanerTask.LoadGallogComments;
 
                 bool cont = true, hasExecption = false;
 
@@ -140,15 +136,14 @@ namespace DCCleaner
                     }
                 }
 
-                isBusy = false;
-                isSearching = false;
+                currentTask = CleanerTask.None;
                 btn_LoadComments.Text = "불러오기";
                 btn_LoadComments.Enabled = true;
                 if (!hasExecption)
                     SetStatusMessage("쓴 리플 목록을 불러왔습니다 - 총 " + commentList.Count.ToString() + "개");
                 loadingToken = null;
             }
-            else if (isBusy && isSearching)
+            else if (currentTask == CleanerTask.LoadGallogComments)
             {
                 btn_LoadComments.Enabled = false;
                 SetStatusMessage("취소하는 중입니다...");
@@ -287,12 +282,12 @@ namespace DCCleaner
             DeleteInformationRow row = (dgv_ArticleList.SelectedRows[0] as DeleteInformationRow);
             ArticleInformation target = row.ArticleInformation;
 
-            if (isBusy)
+            if (currentTask != CleanerTask.None)
                 return;
 
             SetStatusMessage("글을 삭제하는 중입니다...");
 
-            isBusy = true;
+            currentTask = CleanerTask.DeleteGallogArticles;
 
             try
             {
@@ -322,7 +317,7 @@ namespace DCCleaner
                 SetStatusMessage(rmErrMsg);
             }
 
-            isBusy = false;
+            currentTask = CleanerTask.None;
         }
 
         private async void menu_DeleteComment_Clicked(object sender, EventArgs e)
@@ -333,12 +328,12 @@ namespace DCCleaner
             DeleteInformationRow row = (dgv_CommentList.SelectedRows[0] as DeleteInformationRow);
             CommentInformation target = row.CommentInformation;
 
-            if (isBusy)
+            if (currentTask != CleanerTask.None)
                 return;
 
             SetStatusMessage("리플을 삭제하는 중입니다...");
 
-            isBusy = true;
+            currentTask = CleanerTask.DeleteGallogComments;
 
             try
             {
@@ -368,12 +363,12 @@ namespace DCCleaner
                 SetStatusMessage(rmErrMsg);
             }
 
-            isBusy = false;
+            currentTask = CleanerTask.None;
         }
 
         private void tc_CleanerTabContainer_Selecting(object sender, TabControlCancelEventArgs e)
         {
-            if (isBusy)
+            if (currentTask != CleanerTask.None)
             {
                 e.Cancel = true;
 
@@ -389,7 +384,7 @@ namespace DCCleaner
 
         private async void btn_SearchArticle_Click(object sender, EventArgs e)
         {
-            if (!isBusy && !isSearching)
+            if (currentTask == CleanerTask.None)
             {
                 if (string.IsNullOrWhiteSpace(tb_SearchGalleryID.Text))
                 {
@@ -427,8 +422,7 @@ namespace DCCleaner
                 List<ArticleInformation> newSearchedList;
                 Tuple<List<ArticleInformation>, int, int, bool> req = null;
 
-                isBusy = true;
-                isSearching = true;
+                currentTask = CleanerTask.SearchGalleryArticles;
 
                 if (loadingToken == null)
                     loadingToken = new CancellationTokenSource();
@@ -471,15 +465,14 @@ namespace DCCleaner
                         break;
                 }
 
-                isBusy = false;
-                isSearching = false;
+                currentTask = CleanerTask.None;
                 btn_SearchArticle.Text = "검색하기";
                 if (!hasExecption)
                     SetStatusMessage("검색된 글 목록을 불러왔습니다 - 총 " + dgv_SearchArticle.Rows.Count.ToString() + "개");
 
                 loadingToken = null;
             }
-            else if (isBusy && isSearching)
+            else if (currentTask == CleanerTask.SearchGalleryArticles)
             {
                 SetStatusMessage("검색을 중단하는 중입니다...");
 
@@ -493,7 +486,7 @@ namespace DCCleaner
             if (dgv_SearchArticle.Rows.Count == 0)
                 return;
 
-            if (isBusy)
+            if (currentTask != CleanerTask.None)
                 return;
 
             if (!conn.LoginInfo.IsLoggedIn)
@@ -508,7 +501,7 @@ namespace DCCleaner
 
             SetStatusMessage("검색된 글 삭제중...");
 
-            isBusy = true;
+            currentTask = CleanerTask.DeleteGalleryArticles;
 
             string password = tb_DeletePassword.Text.Trim();
             GalleryType gallType = GalleryType.Normal;
@@ -585,7 +578,7 @@ namespace DCCleaner
             DeleteInformationRow row = (dgv_SearchArticle.SelectedRows[0] as DeleteInformationRow);
             ArticleInformation target = row.ArticleInformation;
 
-            if (isBusy)
+            if (currentTask != CleanerTask.None)
                 return;
 
             if (!conn.LoginInfo.IsLoggedIn)
@@ -607,7 +600,7 @@ namespace DCCleaner
 
             SetStatusMessage("글을 삭제하는 중입니다...");
 
-            isBusy = true;
+            currentTask = CleanerTask.DeleteGalleryArticles;
 
             try
             {
@@ -640,7 +633,7 @@ namespace DCCleaner
                 SetStatusMessage(rmErrMsg);
             }
 
-            isBusy = false;
+            currentTask = CleanerTask.None;
         }
         #endregion
 
@@ -654,7 +647,7 @@ namespace DCCleaner
             if (dgv_ArticleList.Rows.Count <= 0)
                 return;
 
-            if (isBusy)
+            if (currentTask != CleanerTask.None)
                 return;
 
             if (both)
@@ -662,7 +655,7 @@ namespace DCCleaner
             else
                 SetStatusMessage("쓴 글 - 갤러리만 삭제중...");
 
-            isBusy = true;
+            currentTask = CleanerTask.DeleteGallogArticles;
             deleteStartCnt = dgv_ArticleList.Rows.Count;
             deleteEndCnt = 0;
 
@@ -682,7 +675,7 @@ namespace DCCleaner
             if (dgv_CommentList.Rows.Count <= 0)
                 return;
 
-            if (isBusy)
+            if (currentTask != CleanerTask.None)
                 return;
 
             if (both)
@@ -690,7 +683,7 @@ namespace DCCleaner
             else
                 SetStatusMessage("쓴 리플 - 갤러리만 삭제중...");
 
-            isBusy = true;
+            currentTask = CleanerTask.DeleteGallogComments;
             deleteStartCnt = dgv_CommentList.Rows.Count;
             deleteEndCnt = 0;
 
@@ -734,7 +727,7 @@ namespace DCCleaner
             {
                 if (deleteStartCnt <= deleteEndCnt)
                 {
-                    isBusy = false;
+                    currentTask = CleanerTask.None;
 
                     if (both)
                         SetStatusMessage("쓴 글 - 갤로그도 삭제 완료");
@@ -754,7 +747,7 @@ namespace DCCleaner
 
             if (deleteStartCnt <= deleteEndCnt)
             {
-                isBusy = false;
+                currentTask = CleanerTask.None;
 
                 if (both)
                     SetStatusMessage("쓴 글 - 갤로그도 삭제 완료");
@@ -796,7 +789,7 @@ namespace DCCleaner
             {
                 if (deleteStartCnt <= deleteEndCnt)
                 {
-                    isBusy = false;
+                    currentTask = CleanerTask.None;
 
                     if (both)
                         SetStatusMessage("쓴 리플 - 갤로그도 삭제 완료");
@@ -816,7 +809,7 @@ namespace DCCleaner
 
             if (deleteStartCnt <= deleteEndCnt)
             {
-                isBusy = false;
+                currentTask = CleanerTask.None;
 
                 if (both)
                     SetStatusMessage("쓴 리플 - 갤로그도 삭제 완료");
@@ -857,7 +850,7 @@ namespace DCCleaner
             {
                 if (deleteStartCnt <= deleteEndCnt)
                 {
-                    isBusy = false;
+                    currentTask = CleanerTask.None;
 
                     SetStatusMessage("검색된 글 삭제 완료");
                 }
@@ -870,7 +863,7 @@ namespace DCCleaner
             
             if (deleteStartCnt <= deleteEndCnt)
             {
-                isBusy = false;
+                currentTask = CleanerTask.None;
 
                 SetStatusMessage("검색된 글 삭제 완료");
             }
