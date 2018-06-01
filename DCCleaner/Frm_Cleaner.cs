@@ -513,7 +513,7 @@ namespace DCCleaner
             deleteStartCnt = dgv_SearchArticle.Rows.Count;
             deleteEndCnt = 0;
 
-            for (int i = 0; i < deleteStartCnt; i++)
+            for (int i = deleteStartCnt - 1; i >= 0; i--)
             {
                 DeleteInformationRow row = (dgv_SearchArticle.Rows[i] as DeleteInformationRow);
                 DeleteSearchedArticleAsync(row, gallType, password);
