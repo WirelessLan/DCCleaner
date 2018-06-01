@@ -659,7 +659,7 @@ namespace DCCleaner
             deleteStartCnt = dgv_ArticleList.Rows.Count;
             deleteEndCnt = 0;
 
-            for (int i = 0; i < deleteStartCnt; i++)
+            for (int i = deleteStartCnt - 1; i >= 0; i--)
             {
                 DeleteInformationRow row = (dgv_ArticleList.Rows[i] as DeleteInformationRow);
                 DeleteArticleAsync(row, both);
@@ -687,7 +687,7 @@ namespace DCCleaner
             deleteStartCnt = dgv_CommentList.Rows.Count;
             deleteEndCnt = 0;
 
-            for (int i = 0; i < deleteStartCnt; i++)
+            for (int i = deleteStartCnt - 1; i >= 0; i--)
             {
                 DeleteInformationRow row = (dgv_CommentList.Rows[i] as DeleteInformationRow);
                 DeleteCommentAsync(row, both);
@@ -708,7 +708,7 @@ namespace DCCleaner
             }
 
             if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
-                for (int j = 0; j < deleteEndCnt; j++)
+                for (int j = 0; j < deleteRetryCnt; j++)
                 {
                     // 실패시, Sleep 후 10회 재시도
                     await Task.Delay(1000);
@@ -770,7 +770,7 @@ namespace DCCleaner
             }
 
             if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
-                for (int j = 0; j < deleteEndCnt; j++)
+                for (int j = 0; j < deleteRetryCnt; j++)
                 {
                     // 실패시, Sleep 후 10회 재시도
                     await Task.Delay(1000);
