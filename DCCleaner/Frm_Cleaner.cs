@@ -17,7 +17,8 @@ namespace DCCleaner
         int deleteEndCnt = 0;
         CancellationTokenSource loadingToken;
 
-        const int deleteRetryCnt = 10;
+        private readonly int deleteRetryCnt = 20;
+        private readonly int deleteRetryTime = 500;
         #endregion
 
         #region Properties
@@ -702,16 +703,13 @@ namespace DCCleaner
             {
                 res = await conn.DeleteArticle(info, both);
             }
-            catch
-            {
-                // 삭제 못한 글은 무시
-            }
+            catch { }
 
             if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
                 for (int j = 0; j < deleteRetryCnt; j++)
                 {
-                    // 실패시, Sleep 후 10회 재시도
-                    await Task.Delay(1000);
+                    // 실패시, Sleep 후 재시도
+                    await Task.Delay(deleteRetryTime);
                     res = await conn.DeleteArticle(info, both);
                     if (res.IsGalleryDeleted && (!both || res.IsGallogDeleted))
                         break;
@@ -764,16 +762,13 @@ namespace DCCleaner
             {
                 res = await conn.DeleteComment(info, both);
             }
-            catch
-            {
-                // 삭제 못한 리플은 무시
-            }
+            catch { }
 
             if (!res.IsGalleryDeleted || (both && !res.IsGallogDeleted))
                 for (int j = 0; j < deleteRetryCnt; j++)
                 {
-                    // 실패시, Sleep 후 10회 재시도
-                    await Task.Delay(1000);
+                    // 실패시, Sleep 후 재시도
+                    await Task.Delay(deleteRetryTime);
                     res = await conn.DeleteComment(info, both);
                     if (res.IsGalleryDeleted && (!both || res.IsGallogDeleted))
                         break;
@@ -833,8 +828,8 @@ namespace DCCleaner
             if (!res.IsGalleryDeleted)
                 for (int j = 0; j < deleteRetryCnt; j++)
                 {
-                    // 실패시, Sleep 후 10회 재시도
-                    await Task.Delay(1000);
+                    // 실패시, Sleep 후 재시도
+                    await Task.Delay(deleteRetryTime);
                     res = await conn.DeleteArticle(info, gallType, false);
                     if (res.IsGalleryDeleted)
                         break;

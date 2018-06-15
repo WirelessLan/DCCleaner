@@ -21,6 +21,7 @@ namespace DCAdapter
         private readonly string _galleryURL = "http://gall.dcinside.com";
         private readonly string _loginURL = "https://dcid.dcinside.com/join/member_check.php";
         private readonly string _loginPageURL = "https://dcid.dcinside.com/join/login.php";
+        private readonly int _defaultTimeout = 10000;
 
         private async Task<LoginStatus> PostLoginAsync(string id, string pw, bool retry = true)
         {
@@ -41,12 +42,13 @@ namespace DCAdapter
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(_loginURL);
 
             request.Accept = _defaultAcceptString;
-            request.Method = "POST";
             request.ContentType = "application/x-www-form-urlencoded";
             request.CookieContainer = cookies;
-            request.UserAgent = _userAgent;
+            request.Method = "POST";
             request.Proxy = null;
             request.Referer = _loginPageURL + "?s_url=" + HttpUtility.UrlEncode(gallUrl);
+            request.Timeout = _defaultTimeout;
+            request.UserAgent = _userAgent;
 
             using (Stream stream = await request.GetRequestStreamAsync())
             using (StreamWriter streamWriter = new StreamWriter(stream))
@@ -96,11 +98,12 @@ namespace DCAdapter
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(_loginPageURL + "?s_url=" + HttpUtility.UrlEncode(gallUrl));
 
             request.Accept = _defaultAcceptString;
-            request.Method = "GET";
-            request.Referer = gallUrl;
             request.CookieContainer = cookies;
-            request.UserAgent = _userAgent;
+            request.Method = "GET";
             request.Proxy = null;
+            request.Referer = gallUrl;
+            request.Timeout = _defaultTimeout;
+            request.UserAgent = _userAgent;
 
             using (WebResponse response = await request.GetResponseAsync())
             {
@@ -120,11 +123,12 @@ namespace DCAdapter
         {
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_gallogURL + "/" + id.ToLower());
 
-            req.UserAgent = _userAgent;
-            req.Method = "GET";
             req.CookieContainer = cookies;
+            req.Method = "GET";
             req.Proxy = null;
             req.Referer = _gallogURL;
+            req.Timeout = _defaultTimeout;
+            req.UserAgent = _userAgent;
 
             using (WebResponse res = await req.GetResponseAsync())
             {
@@ -150,12 +154,13 @@ namespace DCAdapter
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?page=" + page + "&rpage=" + cPage + "&gid=" + user_id + "&cid=");
 
-            req.Host = _gallogDomain;
-            req.Referer = referer;
-            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
+            req.Host = _gallogDomain;
             req.Method = "GET";
             req.Proxy = null;
+            req.Referer = referer;
+            req.Timeout = _defaultTimeout;
+            req.UserAgent = _userAgent;
 
             using (WebResponse res = await req.GetResponseAsync())
             {
@@ -200,12 +205,13 @@ namespace DCAdapter
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(searchPath);
 
             req.Accept = _defaultAcceptString;
-            req.Method = "GET";
             req.CookieContainer = cookies;
+            req.Host = _galleryDomain;
+            req.Method = "GET";
             req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
             req.UserAgent = _userAgent;
-            req.Host = _galleryDomain;
 
             using (var res = await req.GetResponseAsync())
             {
@@ -279,14 +285,15 @@ namespace DCAdapter
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
-            req.Method = "POST";
             req.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
             req.CookieContainer = cookies;
+            req.Headers.Add("X-Requested-With", "XMLHttpRequest");
+            req.Host = _galleryDomain;
+            req.Method = "POST";
             req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
             req.UserAgent = _userAgent;
-            req.Host = _galleryDomain;
-            req.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
             using (Stream stream = await req.GetRequestStreamAsync())
             using (StreamWriter writer = new StreamWriter(stream))
@@ -372,14 +379,15 @@ namespace DCAdapter
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
-            req.Method = "POST";
             req.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
             req.CookieContainer = cookies;
+            req.Headers.Add("X-Requested-With", "XMLHttpRequest");
+            req.Host = _galleryDomain;
+            req.Method = "POST";
             req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
             req.UserAgent = _userAgent;
-            req.Host = _galleryDomain;
-            req.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
             using (Stream stream = await req.GetRequestStreamAsync())
             using (StreamWriter writer = new StreamWriter(stream))
@@ -447,13 +455,14 @@ namespace DCAdapter
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
-            req.Method = "POST";
             req.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
             req.CookieContainer = cookies;
+            req.Headers.Add("X-Requested-With", "XMLHttpRequest");
+            req.Method = "POST";
             req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
             req.UserAgent = _userAgent;
-            req.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
             using (Stream stream = await req.GetRequestStreamAsync())
             using (StreamWriter writer = new StreamWriter(req.GetRequestStream()))
@@ -515,14 +524,15 @@ namespace DCAdapter
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
-            req.Method = "POST";
             req.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
             req.CookieContainer = cookies;
+            req.Headers.Add("X-Requested-With", "XMLHttpRequest");
+            req.Host = _galleryDomain;
+            req.Method = "POST";
             req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
             req.UserAgent = _userAgent;
-            req.Host = _galleryDomain;
-            req.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
             using (Stream stream = await req.GetRequestStreamAsync())
             using (StreamWriter writer = new StreamWriter(stream))
@@ -569,13 +579,14 @@ namespace DCAdapter
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
-            req.Method = "POST";
             req.ContentType = "application/x-www-form-urlencoded";
             req.CookieContainer = cookies;
+            req.Host = _gallogDomain;
+            req.Method = "POST";
             req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
             req.UserAgent = _userAgent;
-            req.Host = _gallogDomain;
 
             using (Stream stream = await req.GetRequestStreamAsync())
             using (StreamWriter writer = new StreamWriter(stream))
@@ -622,13 +633,14 @@ namespace DCAdapter
             
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
-            req.Method = "POST";
             req.ContentType = "application/x-www-form-urlencoded";
             req.CookieContainer = cookies;
+            req.Host = _gallogDomain;
+            req.Method = "POST";
             req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
             req.UserAgent = _userAgent;
-            req.Host = _gallogDomain;
 
             using (Stream stream = await req.GetRequestStreamAsync())
             using (StreamWriter writer = new StreamWriter(stream))
@@ -674,12 +686,13 @@ namespace DCAdapter
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?id=" + gallid + "&no=" + articleid);
             
             req.Accept = _defaultAcceptString;
-            req.Method = "GET";
-            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
-            req.Proxy = null;
             req.Host = _galleryDomain;
+            req.Method = "GET";
+            req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
+            req.UserAgent = _userAgent;
 
             using (var res = await req.GetResponseAsync())
             {
@@ -724,13 +737,14 @@ namespace DCAdapter
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL);
 
-            req.Method = "GET";
             req.Accept = _defaultAcceptString;
-            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
-            req.Proxy = null;
             req.Host = _galleryDomain;
+            req.Method = "GET";
+            req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
+            req.UserAgent = _userAgent;
 
             using (WebResponse res = await req.GetResponseAsync())
             {
@@ -755,12 +769,13 @@ namespace DCAdapter
             string referer = _gallogURL + "/inc/_mainGallog.php?gid=" + id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?gid=" + id + "&cid=" + gall_no + "&pno=" + art_id + "&logNo=" + logNo + "&mode=gMdf");
 
-            req.Method = "GET";
-            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
-            req.Proxy = null;
             req.Host = _gallogDomain;
+            req.Method = "GET";
+            req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
+            req.UserAgent = _userAgent;
 
             using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
             {
@@ -784,12 +799,13 @@ namespace DCAdapter
             string referer = _gallogURL + "/inc/_mainGallog.php?gid=" + id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
 
-            req.Method = "GET";
-            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
-            req.Proxy = null;
             req.Host = _gallogDomain;
+            req.Method = "GET";
+            req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
+            req.UserAgent = _userAgent;
 
             using (WebResponse res = await req.GetResponseAsync())
             {
@@ -814,12 +830,13 @@ namespace DCAdapter
             string referer = _gallogURL + "/inc/_mainGallog.php?gid=" + id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(_reqURL + "?gid=" + id + "&cid=&id=&no=" + art_id + "&c_no=" + commentId + "&logNo=" + logNo);
 
-            req.Method = "GET";
-            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
-            req.Proxy = null;
             req.Host = _gallogDomain;
+            req.Method = "GET";
+            req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
+            req.UserAgent = _userAgent;
 
             using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
             {
@@ -843,12 +860,13 @@ namespace DCAdapter
             string referer = _gallogURL + "/inc/_mainGallog.php?gid=" + user_id;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
 
-            req.Method = "GET";
-            req.UserAgent = _userAgent;
             req.CookieContainer = cookies;
-            req.Proxy = null;
             req.Host = _gallogDomain;
+            req.Method = "GET";
+            req.Proxy = null;
             req.Referer = referer;
+            req.Timeout = _defaultTimeout;
+            req.UserAgent = _userAgent;
 
             using (WebResponse res = await req.GetResponseAsync())
             {
