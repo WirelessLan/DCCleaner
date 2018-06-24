@@ -17,8 +17,8 @@ namespace DCCleaner
         int deleteEndCnt = 0;
         CancellationTokenSource loadingToken;
 
-        private readonly int deleteRetryCnt = 20;
-        private readonly int deleteRetryTime = 500;
+        private readonly int deleteRetryCnt = 40;
+        private readonly int deleteRetryTime = 200;
         #endregion
 
         #region Properties

@@ -123,7 +123,7 @@ namespace DCAdapter
                     {
                         try
                         {
-                            await Task.Delay(200);
+                            await Task.Delay(500);
                             loadResult = await LoadItemListAsync<T>(page);
                             itemList = (List<T>)loadResult;
                         }
@@ -264,7 +264,7 @@ namespace DCAdapter
         public async Task<ArticleInformation> DeleteArticle(ArticleInformation info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 50;
+            int delay = 100;
             
             GallogArticleDeleteParameter delParams = null;
             try
@@ -360,7 +360,7 @@ namespace DCAdapter
         public async Task<CommentInformation> DeleteComment(CommentInformation info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 50;
+            int delay = 100;
             GallogCommentDeleteParameter delParams = null;
 
             try
