@@ -207,11 +207,11 @@ namespace DCAdapter
 
                         searchHtml = null;
 
-                        for (int j = 0; j < 5; j++)
+                        for (int j = 0; j < 10; j++)
                         {
                             try
                             {
-                                await Task.Delay(500);
+                                await Task.Delay(1000);
                                 req = await GetGalleryNicknameSearchPageAsync(gall_id, gallType, nickname, searchPos, searchPage);
 
                                 if (req != null && !string.IsNullOrWhiteSpace(req.Item1))
@@ -264,7 +264,7 @@ namespace DCAdapter
         public async Task<ArticleInformation> DeleteArticle(ArticleInformation info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 100;
+            int delay = 50;
             
             GallogArticleDeleteParameter delParams = null;
             try
@@ -295,7 +295,7 @@ namespace DCAdapter
         public async Task<ArticleInformation> DeleteArticle(ArticleInformation info, GalleryType gallType, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 100;
+            int delay = 50;
             
             DeleteResult res1 = null;
             try
@@ -360,7 +360,7 @@ namespace DCAdapter
         public async Task<CommentInformation> DeleteComment(CommentInformation info, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 100;
+            int delay = 50;
             GallogCommentDeleteParameter delParams = null;
 
             try
@@ -392,7 +392,7 @@ namespace DCAdapter
         public async Task<CommentInformation> DeleteComment(CommentInformation info, bool actualDelete, bool both)
         {
             // HTTP 요청에 딜레이를 주어 서버 오류 방지
-            int delay = 100;
+            int delay = 50;
 
             DeleteResult res1 = null;
 

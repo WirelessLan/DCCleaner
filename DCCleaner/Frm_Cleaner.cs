@@ -484,41 +484,7 @@ namespace DCCleaner
 
         private void btn_RemoveSearchedArticle_Click(object sender, EventArgs e)
         {
-            if (dgv_SearchArticle.Rows.Count == 0)
-                return;
-
-            if (currentTask != CleanerTask.None)
-                return;
-
-            if (!conn.LoginInfo.IsLoggedIn)
-            {
-                if (string.IsNullOrWhiteSpace(tb_DeletePassword.Text))
-                {
-                    tb_DeletePassword.Focus();
-                    SetStatusMessage("삭제할 비밀번호를 입력해주세요.");
-                    return;
-                }
-            }
-
-            SetStatusMessage("검색된 글 삭제중...");
-
-            currentTask = CleanerTask.DeleteGalleryArticles;
-
-            string password = tb_DeletePassword.Text.Trim();
-            GalleryType gallType = GalleryType.Normal;
-            if (rb_NormalGallery.Checked)
-                gallType = GalleryType.Normal;
-            else if (rb_MinorGallery.Checked)
-                gallType = GalleryType.Minor;
-
-            deleteStartCnt = dgv_SearchArticle.Rows.Count;
-            deleteEndCnt = 0;
-
-            for (int i = deleteStartCnt - 1; i >= 0; i--)
-            {
-                DeleteInformationRow row = (dgv_SearchArticle.Rows[i] as DeleteInformationRow);
-                DeleteSearchedArticleAsync(row, gallType, password);
-            }
+            RemoveSearchedArticles();
         }
 
         private void dgv_SearchArticle_MouseClick(object sender, MouseEventArgs e)
@@ -643,7 +609,7 @@ namespace DCCleaner
         /// 글 목록 삭제 함수
         /// </summary>
         /// <param name="both">True : 갤로그도, False : 갤러리만</param>
-        private void RemoveArticles(bool both)
+        private async void RemoveArticles(bool both)
         {
             if (dgv_ArticleList.Rows.Count <= 0)
                 return;
@@ -664,6 +630,7 @@ namespace DCCleaner
             {
                 DeleteInformationRow row = (dgv_ArticleList.Rows[i] as DeleteInformationRow);
                 DeleteArticleAsync(row, both);
+                await Task.Delay(200);
             }
         }
 
@@ -671,7 +638,7 @@ namespace DCCleaner
         /// 댓글 목록 삭제 함수
         /// </summary>
         /// <param name="both">True : 갤로그도 False : 갤러리만</param>
-        private void RemoveComments(bool both)
+        private async void RemoveComments(bool both)
         {
             if (dgv_CommentList.Rows.Count <= 0)
                 return;
@@ -692,6 +659,47 @@ namespace DCCleaner
             {
                 DeleteInformationRow row = (dgv_CommentList.Rows[i] as DeleteInformationRow);
                 DeleteCommentAsync(row, both);
+                await Task.Delay(200);
+            }
+        }
+
+        private async void RemoveSearchedArticles()
+        {
+            if (dgv_SearchArticle.Rows.Count == 0)
+                return;
+
+            if (currentTask != CleanerTask.None)
+                return;
+
+            if (!conn.LoginInfo.IsLoggedIn)
+            {
+                if (string.IsNullOrWhiteSpace(tb_DeletePassword.Text))
+                {
+                    tb_DeletePassword.Focus();
+                    SetStatusMessage("삭제할 비밀번호를 입력해주세요.");
+                    return;
+                }
+            }
+
+            SetStatusMessage("검색된 글 삭제중...");
+
+            currentTask = CleanerTask.DeleteGalleryArticles;
+
+            string password = tb_DeletePassword.Text.Trim();
+            GalleryType gallType = GalleryType.Normal;
+            if (rb_NormalGallery.Checked)
+                gallType = GalleryType.Normal;
+            else if (rb_MinorGallery.Checked)
+                gallType = GalleryType.Minor;
+
+            deleteStartCnt = dgv_SearchArticle.Rows.Count;
+            deleteEndCnt = 0;
+
+            for (int i = deleteStartCnt - 1; i >= 0; i--)
+            {
+                DeleteInformationRow row = (dgv_SearchArticle.Rows[i] as DeleteInformationRow);
+                DeleteSearchedArticleAsync(row, gallType, password);
+                await Task.Delay(200);
             }
         }
 
