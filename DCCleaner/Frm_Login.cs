@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
-using System.Threading;
 using DCAdapter;
-using System.Threading.Tasks;
 
 namespace DCCleaner
 {
