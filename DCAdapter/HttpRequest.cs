@@ -511,8 +511,8 @@ namespace DCAdapter
                     {
                         string result = await content.ReadAsStringAsync();
 
-                        // 성공
-                        if (result.Contains("GidMgr.resetGalleryData(2);"))
+                        // 성공 또는 이미 삭제된 경우
+                        if (result.Contains("GidMgr.resetGalleryData(2);") || result.Contains("해당정보가 없습니다"))
                         {
                             return new DeleteResult(true, "");
                         }
